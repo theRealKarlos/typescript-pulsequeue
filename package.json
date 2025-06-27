@@ -1,0 +1,28 @@
+{
+  "name": "typescript-pulsequeue",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test:dev": "ts-node scripts/test-order.ts",
+    "build:dev": "ts-node scripts/build-order.ts",
+    "plan:dev": "cd infra/envs/dev && terraform plan -out=tfplan",
+    "apply:dev": "cd infra/envs/dev && terraform apply tfplan",
+    "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.150",
+    "@types/aws-sdk": "^0.0.42",
+    "@types/node": "^24.0.4",
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.25.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1692.0"
+  }
+}
