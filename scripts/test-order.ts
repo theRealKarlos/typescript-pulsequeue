@@ -12,11 +12,27 @@ const mockEvent = {
   }),
 };
 
+// Create a mock context for testing
+const mockContext = {
+  callbackWaitsForEmptyEventLoop: true,
+  functionName: 'order-service-handler',
+  functionVersion: '$LATEST',
+  invokedFunctionArn: 'arn:aws:lambda:eu-west-2:123456789012:function:order-service-handler',
+  memoryLimitInMB: '128',
+  awsRequestId: 'test-request-id',
+  logGroupName: '/aws/lambda/order-service-handler',
+  logStreamName: '2025/06/28/[$LATEST]test-stream',
+  getRemainingTimeInMillis: () => 30000,
+  done: () => {},
+  fail: () => {},
+  succeed: () => {},
+};
+
 // Main test function - immediately invoked async function
 (async () => {
   try {
-    // Call the handler with the mock event
-    const result = await handler(mockEvent as any);
+    // Call the handler with the mock event and context
+    const result = await handler(mockEvent as any, mockContext);
 
     // Validate the response - check if status code is 200 (success)
     if (!result || result.statusCode !== 200) {

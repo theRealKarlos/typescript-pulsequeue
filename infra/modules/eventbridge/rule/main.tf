@@ -34,7 +34,7 @@ resource "aws_lambda_permission" "allow_eventbridge_rule" {
   action        = "lambda:InvokeFunction"
   function_name = var.lambda_arn
   principal     = "events.amazonaws.com"
-  source_arn    = "arn:aws:events:${var.region}:${data.aws_caller_identity.current.account_id}:rule/dev-order-placed"
+  source_arn    = "arn:aws:events:${var.region}:${data.aws_caller_identity.current.account_id}:rule/${var.bus_name}/${aws_cloudwatch_event_rule.order_placed.name}"
 }
 
 resource "aws_sqs_queue" "eventbridge_dlq" {

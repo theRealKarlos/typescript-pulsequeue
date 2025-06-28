@@ -14,6 +14,7 @@ export const handler = async (
   event: APIGatewayProxyEvent | EventBridgeEvent<string, OrderPlacedDetail>,
   context: Context
 ): Promise<APIGatewayProxyResult | void> => {
+  console.log("🚀 LAMBDA INVOKED - Event received:", JSON.stringify(event, null, 2));
   console.log("🧪 Lambda cold start successful");
   console.log("🔍 Incoming event keys:", Object.keys(event));
 

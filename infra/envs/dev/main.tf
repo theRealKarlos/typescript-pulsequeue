@@ -15,9 +15,6 @@ module "order_service" {
   lambda_zip_path = abspath("${path.module}/../../../dist/order-service.zip")
   function_name   = "order-service-handler"
   environment     = "dev"
-
-  # Ensure the bus exists before Lambda tries to attach permissions
-  depends_on = [module.eventbridge_bus]
 }
 
 # Attach the OrderPlaced rule to the Lambda
