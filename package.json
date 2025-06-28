@@ -2,6 +2,9 @@
   "name": "typescript-pulsequeue",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": "^18.0.0"
+  },
   "scripts": {
     "test:dev": "ts-node scripts/test-order.ts",
     "build:dev": "ts-node scripts/build-order.ts",
@@ -33,7 +36,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.839.0",
-    "@aws-sdk/client-sqs": "^3.839.0",
-    "aws-sdk": "^2.1692.0"
+    "@aws-sdk/client-sqs": "^3.839.0"
   }
 }
