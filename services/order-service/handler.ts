@@ -1,56 +1,84 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { EventBridgeEvent } from 'aws-lambda';
-import { EventBridge } from 'aws-sdk';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { EventBridgeEvent, Context } from "aws-lambda";
+import { PutEventsCommand } from "@aws-sdk/client-eventbridge";
+import { eventBridge } from "../libs/aws-clients";
 
-// Initialize EventBridge client for API-originated requests
-const eventBridge = new EventBridge();
-
-type OrderPlacedDetail = {
-  orderId: string;
+interface OrderPlacedDetail {
+  orderId?: string;
   customerId: string;
   items: Array<{ sku: string; quantity: number }>;
   _postDeployTest?: boolean;
-};
+}
 
-// Main handler – handles both API Gateway and EventBridge sources
-export const handler = async (  
-  event: APIGatewayProxyEvent | EventBridgeEvent<string, OrderPlacedDetail>
+export const handler = async (
+  event: APIGatewayProxyEvent | EventBridgeEvent<string, OrderPlacedDetail>,
+  context: Context
 ): Promise<APIGatewayProxyResult | void> => {
   console.log("🧪 Lambda cold start successful");
-  console.log("🔍 Incoming event type:", JSON.stringify(Object.keys(event)));
+  console.log("🔍 Incoming event keys:", Object.keys(event));
 
-  // --- EventBridge invocation ---
-  if ('detail' in event) {
-    const { orderId, customerId, items, _postDeployTest } = event.detail;
+  try {
+    // --- EventBridge Invocation ---
+    if ("detail" in event) {
+      const detail = event.detail ?? {};
+      const { orderId, customerId, items, _postDeployTest } = detail;
 
-    if (_postDeployTest) {
-      console.log("📥 Post-deploy test event received:", { orderId, customerId, items });
-    } else {
-      console.log("🧾 Real OrderPlaced event received:", { orderId, customerId, items });
+      if (!customerId || !items) {
+        console.error("❌ Malformed EventBridge payload:", JSON.stringify(detail));
+        throw new Error("Missing required fields in EventBridge payload");
+      }
+
+      if (_postDeployTest) {
+        console.log("📥 Post-deploy test event received:", { orderId, customerId, items });
+      } else {
+        console.log("🧾 Real OrderPlaced event received:", { orderId, customerId, items });
+      }
+
+      return;
     }
 
-    return;
+    // --- API Gateway Invocation ---
+    const parsed = event.body ? JSON.parse(event.body) : {};
+    const { customerId, items } = parsed;
+    const orderId = `order-${Date.now()}`;
+
+    if (!customerId || !items) {
+      console.error("❌ Missing fields in API Gateway body:", parsed);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing customerId or items in request body" }),
+      };
+    }
+
+    const putEventsCommand = new PutEventsCommand({
+      Entries: [
+        {
+          Source: "pulsequeue.orders",
+          DetailType: "OrderPlaced",
+          EventBusName: "pulsequeue-bus",
+          Detail: JSON.stringify({ orderId, customerId, items }),
+        },
+      ],
+    });
+
+    await eventBridge.send(putEventsCommand);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: "Order created", orderId }),
+    };
+  } catch (error) {
+    console.error("💥 Unhandled exception in Lambda:", error);
+
+    // Return a structured error only for API Gateway requests
+    if ("httpMethod" in event) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Internal server error" }),
+      };
+    }
+
+    // For EventBridge, just fail silently after logging
+    throw error;
   }
-
-  // --- API Gateway invocation ---
-  const orderId = `order-${Date.now()}`;
-  const { customerId, items } = event.body
-    ? JSON.parse(event.body)
-    : { customerId: undefined, items: undefined };
-
-  await eventBridge.putEvents({
-    Entries: [
-      {
-        Source: 'pulsequeue.orders',
-        DetailType: 'OrderPlaced',
-        EventBusName: 'pulsequeue-bus',
-        Detail: JSON.stringify({ orderId, customerId, items }),
-      },
-    ],
-  }).promise();
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: 'Order created', orderId }),
-  };
 };
