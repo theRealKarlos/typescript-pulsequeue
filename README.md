@@ -258,7 +258,7 @@ TypeScript-PulseQueue/
 
 ### Current Configuration
 
-- **Region**: eu-west-2 (Ireland)
+- **Region**: eu-west-2 (London)
 - **Environment**: dev
 - **Runtime**: Node.js 22.x
 - **Memory**: Default Lambda allocation
