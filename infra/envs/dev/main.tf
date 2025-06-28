@@ -1,6 +1,6 @@
 # Configure AWS provider
 provider "aws" {
-  region = "eu-west-2"
+  region = var.region
 }
 
 # Create the custom EventBridge bus
@@ -26,6 +26,7 @@ module "eventbridge_order_placed" {
   environment = "dev"
   bus_name    = module.eventbridge_bus.bus_name
   lambda_arn  = module.order_service.lambda_arn
+  region      = var.region
 }
 
 output "lambda_function_name" {

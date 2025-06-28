@@ -1,3 +1,6 @@
+// Ensure region is set early
+process.env.AWS_REGION = process.env.AWS_REGION || 'eu-west-2';
+
 // Import the Lambda handler function to test
 import { handler } from '../services/order-service/handler';
 

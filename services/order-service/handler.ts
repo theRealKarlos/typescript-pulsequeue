@@ -1,33 +1,54 @@
-// Import types for AWS Lambda event and result objects
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-// Import AWS EventBridge client
+import { EventBridgeEvent } from 'aws-lambda';
 import { EventBridge } from 'aws-sdk';
 
-// Initialize EventBridge client
+// Initialize EventBridge client for API-originated requests
 const eventBridge = new EventBridge();
 
-// Lambda handler function to process API Gateway events
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  // Log the received event for debugging purposes
-  console.log('Received event:', JSON.stringify(event));
-  
-  // Generate a unique order ID using the current timestamp
+type OrderPlacedDetail = {
+  orderId: string;
+  customerId: string;
+  items: Array<{ sku: string; quantity: number }>;
+  _postDeployTest?: boolean;
+};
+
+// Main handler – handles both API Gateway and EventBridge sources
+export const handler = async (  
+  event: APIGatewayProxyEvent | EventBridgeEvent<string, OrderPlacedDetail>
+): Promise<APIGatewayProxyResult | void> => {
+  console.log("🧪 Lambda cold start successful");
+  console.log("🔍 Incoming event type:", JSON.stringify(Object.keys(event)));
+
+  // --- EventBridge invocation ---
+  if ('detail' in event) {
+    const { orderId, customerId, items, _postDeployTest } = event.detail;
+
+    if (_postDeployTest) {
+      console.log("📥 Post-deploy test event received:", { orderId, customerId, items });
+    } else {
+      console.log("🧾 Real OrderPlaced event received:", { orderId, customerId, items });
+    }
+
+    return;
+  }
+
+  // --- API Gateway invocation ---
   const orderId = `order-${Date.now()}`;
+  const { customerId, items } = event.body
+    ? JSON.parse(event.body)
+    : { customerId: undefined, items: undefined };
 
-  // Parse the request body to extract order details
-  const { customerId, items } = event.body ? JSON.parse(event.body) : { customerId: undefined, items: undefined };
-
-  // Emit OrderPlaced event to EventBridge
   await eventBridge.putEvents({
-    Entries: [{
-      Source: 'pulsequeue.orders', // Event source identifier
-      DetailType: 'OrderPlaced',   // Type of event
-      Detail: JSON.stringify({ orderId, customerId, items }), // Event details (order info)
-      EventBusName: 'pulsequeue-bus',     // EventBridge bus name, our custom bus
-    }]
+    Entries: [
+      {
+        Source: 'pulsequeue.orders',
+        DetailType: 'OrderPlaced',
+        EventBusName: 'pulsequeue-bus',
+        Detail: JSON.stringify({ orderId, customerId, items }),
+      },
+    ],
   }).promise();
 
-  // Return a successful response with the order ID
   return {
     statusCode: 200,
     body: JSON.stringify({ message: 'Order created', orderId }),

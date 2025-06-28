@@ -7,7 +7,8 @@
     "build:dev": "ts-node scripts/build-order.ts",
     "plan:dev": "cd infra/envs/dev && terraform plan -out=tfplan",
     "apply:dev": "cd infra/envs/dev && terraform apply tfplan",
-    "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev"
+    "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev",
+    "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +24,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@aws-sdk/client-eventbridge": "^3.839.0",
     "aws-sdk": "^2.1692.0"
   }
 }
