@@ -58,11 +58,19 @@ const mockContext: Context = {
 // ============================================================================
 
 /**
+ * Type guard to check if a value is a record with string keys
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
  * Validates if the handler response is a valid test result
  */
-function isValidTestResult(result: any): result is TestResult {
-  return result && 
-         typeof result.statusCode === 'number' && 
+function isValidTestResult(result: unknown): result is TestResult {
+  if (!isRecord(result)) return false;
+  
+  return typeof result.statusCode === 'number' && 
          typeof result.body === 'string';
 }
 

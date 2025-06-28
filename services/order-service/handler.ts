@@ -7,7 +7,7 @@ import { eventBridge } from "../libs/aws-clients";
 // CONFIGURATION
 // ============================================================================
 
-const EVENT_SOURCE = "pulsequeue.orders";
+const EVENT_SOURCE = "order.service";
 const EVENT_DETAIL_TYPE = "OrderPlaced";
 const EVENT_BUS_NAME = "pulsequeue-bus";
 
@@ -43,9 +43,18 @@ class ValidationError extends Error {
 // ============================================================================
 
 /**
+ * Type guard to check if a value is a record with string keys
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
  * Validates if an object is a valid order item
  */
-function isValidOrderItem(item: any): item is OrderItem {
+function isValidOrderItem(item: unknown): item is OrderItem {
+  if (!isRecord(item)) return false;
+  
   return typeof item.sku === 'string' && 
          typeof item.quantity === 'number' && 
          item.quantity > 0;
@@ -54,7 +63,9 @@ function isValidOrderItem(item: any): item is OrderItem {
 /**
  * Validates if an object is a valid order detail
  */
-function isValidOrderDetail(detail: any): detail is OrderPlacedDetail {
+function isValidOrderDetail(detail: unknown): detail is OrderPlacedDetail {
+  if (!isRecord(detail)) return false;
+  
   return typeof detail.customerId === 'string' && 
          Array.isArray(detail.items) && 
          detail.items.every(isValidOrderItem);
@@ -73,7 +84,7 @@ type LambdaEvent = APIGatewayProxyEvent | EventBridgeEvent<typeof EVENT_DETAIL_T
 /**
  * Lambda handler that processes both API Gateway and EventBridge events
  * - API Gateway: Creates orders and publishes to EventBridge
- * - EventBridge: Processes order events (real or test)
+ * - EventBridge: Processes order events from "order.service"
  */
 export const handler = async (
   event: LambdaEvent,
@@ -109,6 +120,7 @@ export const handler = async (
 
 /**
  * Processes EventBridge events (order processing)
+ * Accepts events from "order.service" source
  */
 function handleEventBridgeEvent(event: EventBridgeEvent<typeof EVENT_DETAIL_TYPE, OrderPlacedDetail>): void {
   const detail = event.detail ?? {};
@@ -119,11 +131,12 @@ function handleEventBridgeEvent(event: EventBridgeEvent<typeof EVENT_DETAIL_TYPE
   }
 
   const { orderId, customerId, items, _postDeployTest } = detail;
+  const source = event.source;
 
   if (_postDeployTest) {
-    console.log("📥 Post-deploy test event received:", { orderId, customerId, items });
+    console.log("📥 Post-deploy test event received:", { source, orderId, customerId, items });
   } else {
-    console.log("🧾 Real OrderPlaced event received:", { orderId, customerId, items });
+    console.log("🧾 Real OrderPlaced event received:", { source, orderId, customerId, items });
   }
 }
 

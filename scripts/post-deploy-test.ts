@@ -55,11 +55,22 @@ const event: EventBridgeEvent = {
 // ============================================================================
 
 /**
- * Validates if the EventBridge response has the expected structure
+ * Type guard to check if a value is a record with string keys
  */
-function isValidEventBridgeResponse(result: any): boolean {
-  return result && 
-         typeof result.FailedEntryCount === 'number' && 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Type guard to check if a value is a valid EventBridge response
+ */
+function isValidEventBridgeResponse(result: unknown): result is {
+  FailedEntryCount: number;
+  Entries: Array<Record<string, unknown>>;
+} {
+  if (!isRecord(result)) return false;
+  
+  return typeof result.FailedEntryCount === 'number' && 
          Array.isArray(result.Entries);
 }
 
