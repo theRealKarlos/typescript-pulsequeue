@@ -84,7 +84,7 @@ function isValidTestResult(result: unknown): result is TestResult {
  */
 async function runTest(): Promise<void> {
   try {
-    const result = await handler(mockEvent as any, mockContext);
+    const result = await handler(mockEvent as unknown as Parameters<typeof handler>[0], mockContext);
 
     if (!isValidTestResult(result) || result.statusCode !== EXPECTED_STATUS_CODE) {
       console.error(`Local test failed: Expected statusCode ${EXPECTED_STATUS_CODE}, got ${result?.statusCode}`);

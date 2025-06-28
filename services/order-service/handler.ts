@@ -89,7 +89,7 @@ type LambdaEvent = APIGatewayProxyEvent | EventBridgeEvent<typeof EVENT_DETAIL_T
  */
 export const handler = async (
   event: LambdaEvent,
-  context: Context
+  _context: Context
 ): Promise<APIGatewayProxyResult | void> => {
   try {
     // Handle EventBridge events (order processing)

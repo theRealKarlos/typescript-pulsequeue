@@ -39,6 +39,20 @@ const buildOptions: BuildOptions = {
 // ============================================================================
 
 /**
+ * Runs lint check before building
+ */
+function runLintCheck(): void {
+  try {
+    console.log('🔍 Running lint check...');
+    execSync('npm run lint', { stdio: 'inherit' });
+    console.log('✅ Lint check passed.');
+  } catch {
+    console.error('❌ Lint check failed. Please fix the issues before building.');
+    process.exit(1);
+  }
+}
+
+/**
  * Removes previous build artifacts to ensure clean builds
  */
 function cleanup(): void {
@@ -75,24 +89,28 @@ function createZip(): void {
 
 /**
  * Orchestrates the complete build process:
- * 1. Cleanup previous artifacts
- * 2. Ensure output directory exists
- * 3. Build TypeScript with esbuild
- * 4. Create deployment zip file
+ * 1. Run lint check
+ * 2. Cleanup previous artifacts
+ * 3. Ensure output directory exists
+ * 4. Build TypeScript with esbuild
+ * 5. Create deployment zip file
  */
 async function runBuild(): Promise<void> {
   try {
-    // Step 1: Cleanup
+    // Step 1: Lint check
+    runLintCheck();
+    
+    // Step 2: Cleanup
     cleanup();
     
-    // Step 2: Ensure output directory exists
+    // Step 3: Ensure output directory exists
     ensureDirectoryExists(outDir);
 
-    // Step 3: Build with esbuild
+    // Step 4: Build with esbuild
     await build(buildOptions);
     console.log('Build complete.');
 
-    // Step 4: Create zip
+    // Step 5: Create zip
     createZip();
     console.log('Build + zip ready at dist/order-service.zip');
   } catch (error) {

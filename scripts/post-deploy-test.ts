@@ -1,4 +1,4 @@
-import { EventBridgeClient, PutEventsCommand, PutEventsCommandInput } from "@aws-sdk/client-eventbridge";
+import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { EVENTBRIDGE_CONFIG } from "../services/shared/constants";
 
 // ============================================================================
