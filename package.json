@@ -8,10 +8,10 @@
   "scripts": {
     "test:dev": "ts-node scripts/test-order.ts",
     "build:dev": "ts-node scripts/build-order.ts",
-    "build:api-proxy": "ts-node scripts/build-api-proxy.ts",
+    "test:eventbridge": "ts-node scripts/test-eventbridge-cli.ts",
     "plan:dev": "cd infra/envs/dev && terraform plan -out=tfplan",
     "apply:dev": "cd infra/envs/dev && terraform apply tfplan",
-    "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev",
+    "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev && npm run postdeploy:dev",
     "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts",
     "lint": "ts-node scripts/lint-test.ts",
     "lint:fix": "eslint services/**/*.ts scripts/**/*.ts --fix",

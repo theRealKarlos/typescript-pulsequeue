@@ -39,61 +39,6 @@ module "eventbridge_order_placed" {
 }
 
 # ============================================================================
-# API PROXY LAMBDA FUNCTION DEPLOYMENT
-# ============================================================================
-
-module "api_proxy" {
-  source          = "../../modules/lambda/api-proxy"
-  lambda_zip_path = abspath("${path.module}/../../../dist/api-proxy.zip")
-  function_name   = "${var.environment}-api-proxy"
-  environment     = var.environment
-  event_bus_name  = module.eventbridge_bus.bus_name
-  event_bus_arn   = module.eventbridge_bus.bus_arn
-}
-
-# ============================================================================
-# API GATEWAY INFRASTRUCTURE
-# ============================================================================
-
-module "api_gateway" {
-  source               = "../../modules/api-gateway"
-  environment          = var.environment
-  event_bus_name       = module.eventbridge_bus.bus_name
-  event_bus_arn        = module.eventbridge_bus.bus_arn
-  api_proxy_lambda_arn = module.api_proxy.lambda_arn
-}
-
-# ============================================================================
-# API GATEWAY LOGGING SETUP
-# ============================================================================
-
-resource "aws_iam_role" "apigw_cloudwatch_logs" {
-  name = "apigateway-cloudwatch-logs-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "apigateway.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "apigw_cloudwatch_logs" {
-  role       = aws_iam_role.apigw_cloudwatch_logs.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-}
-
-resource "aws_api_gateway_account" "account" {
-  cloudwatch_role_arn = aws_iam_role.apigw_cloudwatch_logs.arn
-}
-
-# ============================================================================
 # OUTPUTS
 # ============================================================================
 
@@ -115,9 +60,4 @@ output "order_placed_rule_name" {
 
 output "order_placed_rule_arn" {
   value = module.eventbridge_order_placed.rule_arn
-}
-
-output "api_gateway_url" {
-  value       = module.api_gateway.api_gateway_url
-  description = "URL for placing orders via API Gateway"
 }

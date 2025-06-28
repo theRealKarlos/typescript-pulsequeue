@@ -1,4 +1,3 @@
-import { Context } from 'aws-lambda';
 import { handler } from '../services/order-service/handler';
 
 // ============================================================================
@@ -38,21 +37,6 @@ const mockEvent: MockEvent = {
   }),
 };
 
-const mockContext: Context = {
-  callbackWaitsForEmptyEventLoop: true,
-  functionName: 'order-service-handler',
-  functionVersion: '$LATEST',
-  invokedFunctionArn: 'arn:aws:lambda:eu-west-2:123456789012:function:order-service-handler',
-  memoryLimitInMB: '128',
-  awsRequestId: 'test-request-id',
-  logGroupName: '/aws/lambda/order-service-handler',
-  logStreamName: '2025/06/28/[$LATEST]test-stream',
-  getRemainingTimeInMillis: () => 30000,
-  done: () => {},
-  fail: () => {},
-  succeed: () => {},
-};
-
 // ============================================================================
 // VALIDATION FUNCTIONS
 // ============================================================================
@@ -84,7 +68,7 @@ function isValidTestResult(result: unknown): result is TestResult {
  */
 async function runTest(): Promise<void> {
   try {
-    const result = await handler(mockEvent as unknown as Parameters<typeof handler>[0], mockContext);
+    const result = await handler(mockEvent as unknown as Parameters<typeof handler>[0]);
 
     if (!isValidTestResult(result) || result.statusCode !== EXPECTED_STATUS_CODE) {
       console.error(`Local test failed: Expected statusCode ${EXPECTED_STATUS_CODE}, got ${result?.statusCode}`);
