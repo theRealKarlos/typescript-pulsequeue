@@ -5,3 +5,5 @@ dist/
 pulsequeue-notes.txt
 *.tfplan
 tfplan
+infra/envs/dev/tfplan
+

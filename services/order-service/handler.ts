@@ -9,7 +9,7 @@ import { eventBridge } from "../libs/aws-clients";
 
 const EVENT_SOURCE = "order.service";
 const EVENT_DETAIL_TYPE = "OrderPlaced";
-const EVENT_BUS_NAME = "pulsequeue-bus";
+const EVENT_BUS_NAME = "dev-pulsequeue-bus";
 
 // ============================================================================
 // TYPE DEFINITIONS
