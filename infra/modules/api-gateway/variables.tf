@@ -28,3 +28,8 @@ variable "event_bus_arn" {
   description = "EventBridge bus ARN"
   type        = string
 }
+
+variable "api_proxy_lambda_arn" {
+  description = "API Proxy Lambda function ARN for API Gateway integration"
+  type        = string
+}

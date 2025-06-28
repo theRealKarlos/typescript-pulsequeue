@@ -1,15 +1,3 @@
-import { PutEventsCommand } from "@aws-sdk/client-eventbridge";
-import { eventBridge } from "../libs/aws-clients";
-import { EVENTBRIDGE_CONFIG } from "../shared/constants";
-
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-const EVENT_SOURCE = EVENTBRIDGE_CONFIG.SOURCE;
-const EVENT_DETAIL_TYPE = EVENTBRIDGE_CONFIG.DETAIL_TYPE;
-const EVENT_BUS_NAME = EVENTBRIDGE_CONFIG.BUS_NAME;
-
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -35,8 +23,8 @@ function isValidOrderDetail(value: unknown): value is OrderDetail {
          order.items.every(item => 
            typeof item === 'object' && 
            item !== null &&
-           typeof (item as any).sku === 'string' &&
-           typeof (item as any).quantity === 'number'
+           typeof (item as Record<string, unknown>).sku === 'string' &&
+           typeof (item as Record<string, unknown>).quantity === 'number'
          );
 }
 
@@ -48,7 +36,10 @@ function isValidOrderDetail(value: unknown): value is OrderDetail {
  * Lambda function handler for processing order events from EventBridge
  * Validates the event structure and logs order details
  */
-export const handler = async (event: any): Promise<any> => {
+export const handler = async (event: Record<string, unknown>): Promise<{
+  statusCode: number;
+  body: string;
+}> => {
   console.log('🚀 Lambda handler received event:', JSON.stringify(event, null, 2));
 
   try {
@@ -56,12 +47,19 @@ export const handler = async (event: any): Promise<any> => {
     const orderDetail = event.detail || event;
     console.log('📦 Processing order:', JSON.stringify(orderDetail, null, 2));
 
+    // Validate the order if needed
+    if (isValidOrderDetail(orderDetail)) {
+      console.log('✅ Order validation passed');
+    } else {
+      console.warn('⚠️ Order validation failed, but continuing processing');
+    }
+
     // Generate a simple response
     const response = {
       statusCode: 200,
       body: JSON.stringify({
         message: 'Order processed successfully',
-        orderId: orderDetail.orderId || 'unknown',
+        orderId: (orderDetail as Record<string, unknown>).orderId || 'unknown',
         timestamp: new Date().toISOString()
       })
     };

@@ -7,19 +7,13 @@ resource "aws_lambda_function" "api_proxy" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_exec.arn
   handler       = "api-proxy.handler"
-  runtime       = "nodejs22.x"
+  runtime       = "nodejs18.x"
   timeout       = 30
-  memory_size   = 256
 
   environment {
     variables = {
       EVENT_BUS_NAME = var.event_bus_name
     }
-  }
-
-  tags = {
-    Environment = var.environment
-    Service     = "api-proxy"
   }
 }
 
@@ -99,7 +93,3 @@ output "function_name" {
 output "lambda_arn" {
   value = aws_lambda_function.api_proxy.arn
 }
-
-output "invoke_arn" {
-  value = aws_lambda_function.api_proxy.invoke_arn
-} 

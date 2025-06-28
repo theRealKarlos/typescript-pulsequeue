@@ -39,14 +39,28 @@ module "eventbridge_order_placed" {
 }
 
 # ============================================================================
+# API PROXY LAMBDA FUNCTION DEPLOYMENT
+# ============================================================================
+
+module "api_proxy" {
+  source          = "../../modules/lambda/api-proxy"
+  lambda_zip_path = abspath("${path.module}/../../../dist/api-proxy.zip")
+  function_name   = "${var.environment}-api-proxy"
+  environment     = var.environment
+  event_bus_name  = module.eventbridge_bus.bus_name
+  event_bus_arn   = module.eventbridge_bus.bus_arn
+}
+
+# ============================================================================
 # API GATEWAY INFRASTRUCTURE
 # ============================================================================
 
 module "api_gateway" {
-  source         = "../../modules/api-gateway"
-  environment    = var.environment
-  event_bus_name = module.eventbridge_bus.bus_name
-  event_bus_arn  = module.eventbridge_bus.bus_arn
+  source               = "../../modules/api-gateway"
+  environment          = var.environment
+  event_bus_name       = module.eventbridge_bus.bus_name
+  event_bus_arn        = module.eventbridge_bus.bus_arn
+  api_proxy_lambda_arn = module.api_proxy.lambda_arn
 }
 
 # ============================================================================
