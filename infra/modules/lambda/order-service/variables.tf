@@ -11,6 +11,6 @@ variable "function_name" {
 }
 
 variable "environment" {
+  description = "The environment name (e.g., dev, staging, prod)"
   type        = string
-  description = "Deployment environment name (e.g. dev, staging, prod)"
 }

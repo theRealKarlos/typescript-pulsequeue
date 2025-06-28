@@ -1,30 +1,46 @@
-# Configure AWS provider
+# ============================================================================
+# AWS PROVIDER CONFIGURATION
+# ============================================================================
+
 provider "aws" {
   region = var.region
 }
 
-# Create the custom EventBridge bus
+# ============================================================================
+# EVENTBRIDGE INFRASTRUCTURE
+# ============================================================================
+
 module "eventbridge_bus" {
-  source   = "../../modules/eventbridge/bus"
-  bus_name = "pulsequeue-bus"
+  source      = "../../modules/eventbridge/bus"
+  environment = var.environment
 }
 
-# Deploy the Lambda function using the custom module
+# ============================================================================
+# LAMBDA FUNCTION DEPLOYMENT
+# ============================================================================
+
 module "order_service" {
   source          = "../../modules/lambda/order-service"
   lambda_zip_path = abspath("${path.module}/../../../dist/order-service.zip")
-  function_name   = "order-service-handler"
-  environment     = "dev"
+  function_name   = "${var.environment}-order-service-handler"
+  environment     = var.environment
 }
 
-# Attach the OrderPlaced rule to the Lambda
+# ============================================================================
+# EVENTBRIDGE RULE CONFIGURATION
+# ============================================================================
+
 module "eventbridge_order_placed" {
   source      = "../../modules/eventbridge/rule"
-  environment = "dev"
+  environment = var.environment
   bus_name    = module.eventbridge_bus.bus_name
   lambda_arn  = module.order_service.lambda_arn
   region      = var.region
 }
+
+# ============================================================================
+# OUTPUTS
+# ============================================================================
 
 output "lambda_function_name" {
   value = module.order_service.function_name

@@ -1,5 +1,4 @@
-# Variable definition for the custom EventBridge bus name
-variable "bus_name" {
+variable "environment" {
+  description = "The environment name (e.g., dev, staging, prod)"
   type        = string
-  description = "The name of the custom EventBridge bus"
 }

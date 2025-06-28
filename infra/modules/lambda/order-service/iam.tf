@@ -1,3 +1,7 @@
+# ============================================================================
+# LAMBDA EXECUTION ROLE
+# ============================================================================
+
 resource "aws_iam_role" "lambda_exec" {
   name = "order-service-exec-role"
 
@@ -16,6 +20,10 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
+# ============================================================================
+# EVENTBRIDGE PERMISSIONS
+# ============================================================================
+
 resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
   name = "allow-put-events"
   role = aws_iam_role.lambda_exec.id
@@ -31,6 +39,10 @@ resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
     ]
   })
 }
+
+# ============================================================================
+# CLOUDWATCH LOGGING PERMISSIONS
+# ============================================================================
 
 resource "aws_iam_role_policy" "lambda_logging" {
   name = "lambda-basic-logging"

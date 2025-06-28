@@ -1,4 +1,12 @@
+# ============================================================================
+# DATA SOURCES
+# ============================================================================
+
 data "aws_caller_identity" "current" {}
+
+# ============================================================================
+# EVENTBRIDGE RULE
+# ============================================================================
 
 resource "aws_cloudwatch_event_rule" "order_placed" {
   name           = "${var.environment}-order-placed"
@@ -9,6 +17,10 @@ resource "aws_cloudwatch_event_rule" "order_placed" {
   })
 }
 
+# ============================================================================
+# EVENTBRIDGE TARGET
+# ============================================================================
+
 resource "aws_cloudwatch_event_target" "order_handler" {
   rule           = aws_cloudwatch_event_rule.order_placed.name
   event_bus_name = var.bus_name
@@ -18,8 +30,11 @@ resource "aws_cloudwatch_event_target" "order_handler" {
   dead_letter_config {
     arn = aws_sqs_queue.eventbridge_dlq.arn
   }
-
 }
+
+# ============================================================================
+# LAMBDA PERMISSIONS
+# ============================================================================
 
 resource "aws_lambda_permission" "allow_eventbridge" {
   statement_id  = "AllowExecutionFromEventBridge"
@@ -37,12 +52,20 @@ resource "aws_lambda_permission" "allow_eventbridge_rule" {
   source_arn    = "arn:aws:events:${var.region}:${data.aws_caller_identity.current.account_id}:rule/${var.bus_name}/${aws_cloudwatch_event_rule.order_placed.name}"
 }
 
+# ============================================================================
+# DEAD LETTER QUEUE
+# ============================================================================
+
 resource "aws_sqs_queue" "eventbridge_dlq" {
-  name = "order-service-eventbridge-dlq"
+  name = "${var.environment}-order-service-eventbridge-dlq"
 
   visibility_timeout_seconds = 30
-  message_retention_seconds  = 1209600 # 14 days
+  message_retention_seconds  = 1209600
 }
+
+# ============================================================================
+# DEAD LETTER QUEUE POLICY
+# ============================================================================
 
 resource "aws_sqs_queue_policy" "eventbridge_dlq_policy" {
   queue_url = aws_sqs_queue.eventbridge_dlq.id

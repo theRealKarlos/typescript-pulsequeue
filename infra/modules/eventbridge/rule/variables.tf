@@ -9,8 +9,8 @@ variable "lambda_arn" {
 }
 
 variable "environment" {
+  description = "The environment name (e.g., dev, staging, prod)"
   type        = string
-  description = "Environment name used in naming resources"
 }
 
 variable "region" {
