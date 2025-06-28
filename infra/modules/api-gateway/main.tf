@@ -35,6 +35,14 @@ resource "aws_api_gateway_method" "options_orders" {
   authorization = "NONE"
 }
 
+# Root resource methods for CORS
+resource "aws_api_gateway_method" "options_root" {
+  rest_api_id   = aws_api_gateway_rest_api.orders_api.id
+  resource_id   = aws_api_gateway_rest_api.orders_api.root_resource_id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
 # ============================================================================
 # API GATEWAY INTEGRATION
 # ============================================================================
@@ -71,7 +79,23 @@ resource "aws_api_gateway_integration" "options_integration" {
   type = "MOCK"
 
   request_templates = {
-    "application/json" = "{\"statusCode\": 200}"
+    "application/json" = jsonencode({
+      statusCode = 200
+    })
+  }
+}
+
+resource "aws_api_gateway_integration" "options_root_integration" {
+  rest_api_id = aws_api_gateway_rest_api.orders_api.id
+  resource_id = aws_api_gateway_rest_api.orders_api.root_resource_id
+  http_method = aws_api_gateway_method.options_root.http_method
+
+  type = "MOCK"
+
+  request_templates = {
+    "application/json" = jsonencode({
+      statusCode = 200
+    })
   }
 }
 
@@ -89,8 +113,10 @@ resource "aws_api_gateway_deployment" "orders_api_deployment" {
   depends_on = [
     aws_api_gateway_integration.eventbridge_integration,
     aws_api_gateway_integration.options_integration,
+    aws_api_gateway_integration.options_root_integration,
     aws_api_gateway_integration_response.post_200,
-    aws_api_gateway_integration_response.options_200
+    aws_api_gateway_integration_response.options_200,
+    aws_api_gateway_integration_response.options_root_200
   ]
 
   rest_api_id = aws_api_gateway_rest_api.orders_api.id
@@ -192,6 +218,19 @@ resource "aws_api_gateway_method_response" "options_200" {
   }
 }
 
+resource "aws_api_gateway_method_response" "options_root_200" {
+  rest_api_id = aws_api_gateway_rest_api.orders_api.id
+  resource_id = aws_api_gateway_rest_api.orders_api.root_resource_id
+  http_method = aws_api_gateway_method.options_root.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+  }
+}
+
 # ============================================================================
 # API GATEWAY INTEGRATION RESPONSES
 # ============================================================================
@@ -214,6 +253,19 @@ resource "aws_api_gateway_integration_response" "options_200" {
   resource_id = aws_api_gateway_resource.orders.id
   http_method = aws_api_gateway_method.options_orders.http_method
   status_code = aws_api_gateway_method_response.options_200.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_root_200" {
+  rest_api_id = aws_api_gateway_rest_api.orders_api.id
+  resource_id = aws_api_gateway_rest_api.orders_api.root_resource_id
+  http_method = aws_api_gateway_method.options_root.http_method
+  status_code = aws_api_gateway_method_response.options_root_200.status_code
 
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
