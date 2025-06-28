@@ -6,4 +6,6 @@ pulsequeue-notes.txt
 *.tfplan
 tfplan
 infra/envs/dev/tfplan
+*.tfstate
+*.tfstate.*
 
