@@ -2,14 +2,15 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { EventBridgeEvent, Context } from "aws-lambda";
 import { PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { eventBridge } from "../libs/aws-clients";
+import { EVENTBRIDGE_CONFIG } from "../shared/constants";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const EVENT_SOURCE = "order.service";
-const EVENT_DETAIL_TYPE = "OrderPlaced";
-const EVENT_BUS_NAME = "dev-pulsequeue-bus";
+const EVENT_SOURCE = EVENTBRIDGE_CONFIG.SOURCE;
+const EVENT_DETAIL_TYPE = EVENTBRIDGE_CONFIG.DETAIL_TYPE;
+const EVENT_BUS_NAME = EVENTBRIDGE_CONFIG.BUS_NAME;
 
 // ============================================================================
 // TYPE DEFINITIONS

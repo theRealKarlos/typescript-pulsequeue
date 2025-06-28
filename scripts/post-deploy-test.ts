@@ -1,13 +1,14 @@
 import { EventBridgeClient, PutEventsCommand, PutEventsCommandInput } from "@aws-sdk/client-eventbridge";
+import { EVENTBRIDGE_CONFIG } from "../services/shared/constants";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const DEFAULT_REGION = "eu-west-2";
-const EVENT_SOURCE = "order.service";
-const EVENT_DETAIL_TYPE = "OrderPlaced";
-const EVENT_BUS_NAME = "pulsequeue-bus";
+const DEFAULT_REGION = EVENTBRIDGE_CONFIG.REGION;
+const EVENT_SOURCE = EVENTBRIDGE_CONFIG.SOURCE;
+const EVENT_DETAIL_TYPE = EVENTBRIDGE_CONFIG.DETAIL_TYPE;
+const EVENT_BUS_NAME = EVENTBRIDGE_CONFIG.BUS_NAME;
 
 // ============================================================================
 // TYPE DEFINITIONS
