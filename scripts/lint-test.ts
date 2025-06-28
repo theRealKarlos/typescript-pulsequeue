@@ -39,8 +39,13 @@ function runLint(): { success: boolean; output: string } {
     return { success: true, output };
   } catch (error: unknown) {
     let output = '';
-    if (error && typeof error === 'object' && 'stdout' in error && typeof (error as any).stdout === 'string') {
-      output = (error as any).stdout;
+    if (
+      error &&
+      typeof error === 'object' &&
+      'stdout' in error &&
+      typeof (error as Record<string, unknown>).stdout === 'string'
+    ) {
+      output = (error as Record<string, unknown>).stdout as string;
     } else if (error instanceof Error) {
       output = error.message;
     } else {

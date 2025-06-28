@@ -33,7 +33,7 @@ interface OrderPlacedDetail {
 // ============================================================================
 
 class ValidationError extends Error {
-  constructor(message: string, public details: any) {
+  constructor(message: string, public details: unknown) {
     super(message);
     this.name = 'ValidationError';
   }
@@ -89,7 +89,7 @@ type LambdaEvent = APIGatewayProxyEvent | EventBridgeEvent<typeof EVENT_DETAIL_T
  */
 export const handler = async (
   event: LambdaEvent,
-  _context: Context
+  _context: Context // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<APIGatewayProxyResult | void> => {
   try {
     // Handle EventBridge events (order processing)
