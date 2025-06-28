@@ -14,8 +14,7 @@
     "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev && npm run postdeploy:dev",
     "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts",
     "lint": "ts-node scripts/lint-test.ts",
-    "lint:fix": "eslint services/**/*.ts scripts/**/*.ts --fix",
-    "website": "node website/server.js"
+    "lint:fix": "eslint services/**/*.ts scripts/**/*.ts --fix"
   },
   "keywords": [],
   "author": "",
