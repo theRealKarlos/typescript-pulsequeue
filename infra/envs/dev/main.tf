@@ -39,6 +39,17 @@ module "eventbridge_order_placed" {
 }
 
 # ============================================================================
+# API GATEWAY INFRASTRUCTURE
+# ============================================================================
+
+module "api_gateway" {
+  source         = "../../modules/api-gateway"
+  environment    = var.environment
+  event_bus_name = module.eventbridge_bus.bus_name
+  event_bus_arn  = module.eventbridge_bus.bus_arn
+}
+
+# ============================================================================
 # OUTPUTS
 # ============================================================================
 
@@ -60,4 +71,9 @@ output "order_placed_rule_name" {
 
 output "order_placed_rule_arn" {
   value = module.eventbridge_order_placed.rule_arn
+}
+
+output "api_gateway_url" {
+  value       = module.api_gateway.api_gateway_url
+  description = "URL for placing orders via API Gateway"
 }
