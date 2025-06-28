@@ -10,7 +10,7 @@ import path from 'path';
 const ENTRY_POINT = 'services/order-service/handler.ts';
 const OUTPUT_DIR = 'dist/order-service';
 const ZIP_FILE = 'dist/order-service.zip';
-const TARGET_NODE_VERSION = 'node18';
+const TARGET_NODE_VERSION = 'node22';
 const PLATFORM = 'node';
 
 // ============================================================================
