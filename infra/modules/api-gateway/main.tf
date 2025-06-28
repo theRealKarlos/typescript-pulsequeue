@@ -54,7 +54,7 @@ resource "aws_api_gateway_integration" "eventbridge_integration" {
 
   type                    = "AWS"
   integration_http_method = "POST"
-  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:events:path//"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:events:path//PutEvents"
 
   credentials = aws_iam_role.api_gateway_execution_role.arn
 

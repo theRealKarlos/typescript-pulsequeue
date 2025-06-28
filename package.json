@@ -37,6 +37,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.839.0",
-    "@aws-sdk/client-sqs": "^3.839.0"
+    "@aws-sdk/client-sqs": "^3.839.0",
+    "@types/node-fetch": "^2.6.12",
+    "node-fetch": "^3.3.2"
   }
 }
