@@ -95,14 +95,9 @@ resource "aws_api_gateway_deployment" "orders_api_deployment" {
 
   rest_api_id = aws_api_gateway_rest_api.orders_api.id
 
-  # Force redeployment when CORS changes
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_method.post_orders.id,
-      aws_api_gateway_method.options_orders.id,
-      aws_api_gateway_integration.eventbridge_integration.id,
-      aws_api_gateway_integration.options_integration.id
-    ]))
+  # Force redeployment for CORS fix
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
