@@ -1,19 +1,44 @@
-// Ensure region is set early
-process.env.AWS_REGION = process.env.AWS_REGION || 'eu-west-2';
-
-// Import the Lambda handler function to test
+import { Context } from 'aws-lambda';
 import { handler } from '../services/order-service/handler';
 
-// Create a mock API Gateway event for testing
-const mockEvent = {
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const DEFAULT_REGION = 'eu-west-2';
+const EXPECTED_STATUS_CODE = 200;
+
+// ============================================================================
+// ENVIRONMENT SETUP
+// ============================================================================
+
+process.env.AWS_REGION = process.env.AWS_REGION || DEFAULT_REGION;
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+interface MockEvent {
+  body: string;
+}
+
+interface TestResult {
+  statusCode: number;
+  body: string;
+}
+
+// ============================================================================
+// TEST DATA
+// ============================================================================
+
+const mockEvent: MockEvent = {
   body: JSON.stringify({
     customerId: 'karl-001',
     items: [{ sku: 'JERS-1023', quantity: 2 }],
   }),
 };
 
-// Create a mock context for testing
-const mockContext = {
+const mockContext: Context = {
   callbackWaitsForEmptyEventLoop: true,
   functionName: 'order-service-handler',
   functionVersion: '$LATEST',
@@ -28,31 +53,45 @@ const mockContext = {
   succeed: () => {},
 };
 
-// Main test function - immediately invoked async function
-(async () => {
+// ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validates if the handler response is a valid test result
+ */
+function isValidTestResult(result: any): result is TestResult {
+  return result && 
+         typeof result.statusCode === 'number' && 
+         typeof result.body === 'string';
+}
+
+// ============================================================================
+// MAIN TEST FUNCTION
+// ============================================================================
+
+/**
+ * Executes the local Lambda handler test
+ * Validates the response and handles errors appropriately
+ */
+async function runTest(): Promise<void> {
   try {
-    // Call the handler with the mock event and context
     const result = await handler(mockEvent as any, mockContext);
 
-    // Validate the response - check if status code is 200 (success)
-    if (!result || result.statusCode !== 200) {
-      console.error(`
-❌  Local test failed: Expected statusCode 200, got ${result?.statusCode}
-🚫  Deployment aborted.
-`);
-      process.exit(1); // Exit with error code to indicate test failure
+    if (!isValidTestResult(result) || result.statusCode !== EXPECTED_STATUS_CODE) {
+      console.error(`Local test failed: Expected statusCode ${EXPECTED_STATUS_CODE}, got ${result?.statusCode}`);
+      process.exit(1);
     }
 
-    // Test passed - log the successful result
-    console.log('✅ Local test passed:', result);
+    console.log('Local test passed:', result);
   } catch (error) {
-    // Handle any errors thrown during the test
-    console.error(`
-❌  Local test threw an error
------------------------------
-Reason: ${error instanceof Error ? error.message : error}
-🚫  Deployment aborted.
-`);
-    process.exit(1); // Exit with error code to indicate test failure
+    console.error(`Local test threw an error: ${error instanceof Error ? error.message : error}`);
+    process.exit(1);
   }
-})();
+}
+
+// ============================================================================
+// EXECUTION
+// ============================================================================
+
+runTest();

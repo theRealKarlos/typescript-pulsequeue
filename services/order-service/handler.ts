@@ -3,75 +3,94 @@ import { EventBridgeEvent, Context } from "aws-lambda";
 import { PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { eventBridge } from "../libs/aws-clients";
 
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const EVENT_SOURCE = "pulsequeue.orders";
+const EVENT_DETAIL_TYPE = "OrderPlaced";
+const EVENT_BUS_NAME = "pulsequeue-bus";
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+interface OrderItem {
+  sku: string;
+  quantity: number;
+}
+
 interface OrderPlacedDetail {
   orderId?: string;
   customerId: string;
-  items: Array<{ sku: string; quantity: number }>;
+  items: OrderItem[];
   _postDeployTest?: boolean;
 }
 
+// ============================================================================
+// CUSTOM ERROR TYPES
+// ============================================================================
+
+class ValidationError extends Error {
+  constructor(message: string, public details: any) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+// ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validates if an object is a valid order item
+ */
+function isValidOrderItem(item: any): item is OrderItem {
+  return typeof item.sku === 'string' && 
+         typeof item.quantity === 'number' && 
+         item.quantity > 0;
+}
+
+/**
+ * Validates if an object is a valid order detail
+ */
+function isValidOrderDetail(detail: any): detail is OrderPlacedDetail {
+  return typeof detail.customerId === 'string' && 
+         Array.isArray(detail.items) && 
+         detail.items.every(isValidOrderItem);
+}
+
+// ============================================================================
+// EVENT TYPE DEFINITIONS
+// ============================================================================
+
+type LambdaEvent = APIGatewayProxyEvent | EventBridgeEvent<typeof EVENT_DETAIL_TYPE, OrderPlacedDetail>;
+
+// ============================================================================
+// MAIN HANDLER FUNCTION
+// ============================================================================
+
+/**
+ * Lambda handler that processes both API Gateway and EventBridge events
+ * - API Gateway: Creates orders and publishes to EventBridge
+ * - EventBridge: Processes order events (real or test)
+ */
 export const handler = async (
-  event: APIGatewayProxyEvent | EventBridgeEvent<string, OrderPlacedDetail>,
+  event: LambdaEvent,
   context: Context
 ): Promise<APIGatewayProxyResult | void> => {
-  console.log("🚀 LAMBDA INVOKED - Event received:", JSON.stringify(event, null, 2));
-  console.log("🧪 Lambda cold start successful");
-  console.log("🔍 Incoming event keys:", Object.keys(event));
-
   try {
-    // --- EventBridge Invocation ---
+    // Handle EventBridge events (order processing)
     if ("detail" in event) {
-      const detail = event.detail ?? {};
-      const { orderId, customerId, items, _postDeployTest } = detail;
-
-      if (!customerId || !items) {
-        console.error("❌ Malformed EventBridge payload:", JSON.stringify(detail));
-        throw new Error("Missing required fields in EventBridge payload");
-      }
-
-      if (_postDeployTest) {
-        console.log("📥 Post-deploy test event received:", { orderId, customerId, items });
-      } else {
-        console.log("🧾 Real OrderPlaced event received:", { orderId, customerId, items });
-      }
-
-      return;
+      return handleEventBridgeEvent(event);
     }
 
-    // --- API Gateway Invocation ---
-    const parsed = event.body ? JSON.parse(event.body) : {};
-    const { customerId, items } = parsed;
-    const orderId = `order-${Date.now()}`;
-
-    if (!customerId || !items) {
-      console.error("❌ Missing fields in API Gateway body:", parsed);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing customerId or items in request body" }),
-      };
-    }
-
-    const putEventsCommand = new PutEventsCommand({
-      Entries: [
-        {
-          Source: "pulsequeue.orders",
-          DetailType: "OrderPlaced",
-          EventBusName: "pulsequeue-bus",
-          Detail: JSON.stringify({ orderId, customerId, items }),
-        },
-      ],
-    });
-
-    await eventBridge.send(putEventsCommand);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Order created", orderId }),
-    };
+    // Handle API Gateway events (order creation)
+    return handleApiGatewayEvent(event);
   } catch (error) {
     console.error("💥 Unhandled exception in Lambda:", error);
 
-    // Return a structured error only for API Gateway requests
+    // Return structured error for API Gateway requests
     if ("httpMethod" in event) {
       return {
         statusCode: 500,
@@ -79,7 +98,68 @@ export const handler = async (
       };
     }
 
-    // For EventBridge, just fail silently after logging
+    // For EventBridge, fail silently after logging
     throw error;
   }
 };
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
+
+/**
+ * Processes EventBridge events (order processing)
+ */
+function handleEventBridgeEvent(event: EventBridgeEvent<typeof EVENT_DETAIL_TYPE, OrderPlacedDetail>): void {
+  const detail = event.detail ?? {};
+  
+  if (!isValidOrderDetail(detail)) {
+    console.error("❌ Malformed EventBridge payload:", JSON.stringify(detail));
+    throw new ValidationError("Missing required fields in EventBridge payload", detail);
+  }
+
+  const { orderId, customerId, items, _postDeployTest } = detail;
+
+  if (_postDeployTest) {
+    console.log("📥 Post-deploy test event received:", { orderId, customerId, items });
+  } else {
+    console.log("🧾 Real OrderPlaced event received:", { orderId, customerId, items });
+  }
+}
+
+/**
+ * Processes API Gateway events (order creation)
+ */
+async function handleApiGatewayEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  const parsed = event.body ? JSON.parse(event.body) : {};
+  
+  if (!isValidOrderDetail(parsed)) {
+    console.error("❌ Missing fields in API Gateway body:", parsed);
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Missing customerId or items in request body" }),
+    };
+  }
+
+  const { customerId, items } = parsed;
+  const orderId = `order-${Date.now()}`;
+
+  // Publish order event to EventBridge
+  const putEventsCommand = new PutEventsCommand({
+    Entries: [
+      {
+        Source: EVENT_SOURCE,
+        DetailType: EVENT_DETAIL_TYPE,
+        EventBusName: EVENT_BUS_NAME,
+        Detail: JSON.stringify({ orderId, customerId, items }),
+      },
+    ],
+  });
+
+  await eventBridge.send(putEventsCommand);
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ message: "Order created", orderId }),
+  };
+}
