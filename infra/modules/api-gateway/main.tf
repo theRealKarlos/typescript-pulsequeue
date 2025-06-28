@@ -54,17 +54,23 @@ resource "aws_api_gateway_integration" "eventbridge_integration" {
 
   type                    = "AWS"
   integration_http_method = "POST"
-  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:events:path//PutEvents"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:events:action/PutEvents"
 
   credentials = aws_iam_role.api_gateway_execution_role.arn
 
   request_templates = {
-    "application/json" = jsonencode({
-      Source       = var.event_source
-      DetailType   = var.event_detail_type
-      EventBusName = var.event_bus_name
-      Detail       = "$input.json('$')"
-    })
+    "application/json" = <<EOF
+{
+  "Entries": [
+    {
+      "Source": "${var.event_source}",
+      "DetailType": "${var.event_detail_type}",
+      "EventBusName": "${var.event_bus_name}",
+      "Detail": "$util.escapeJavaScript($input.body)"
+    }
+  ]
+}
+EOF
   }
 
   passthrough_behavior = "WHEN_NO_MATCH"
@@ -107,6 +113,27 @@ resource "aws_api_gateway_stage" "orders_api_stage" {
   deployment_id = aws_api_gateway_deployment.orders_api_deployment.id
   rest_api_id   = aws_api_gateway_rest_api.orders_api.id
   stage_name    = var.environment
+
+  # Enable detailed logging
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format = jsonencode({
+      requestId          = "$context.requestId"
+      ip                 = "$context.identity.sourceIp"
+      caller             = "$context.identity.caller"
+      user               = "$context.identity.user"
+      requestTime        = "$context.requestTime"
+      httpMethod         = "$context.httpMethod"
+      resourcePath       = "$context.resourcePath"
+      status             = "$context.status"
+      protocol           = "$context.protocol"
+      responseLength     = "$context.responseLength"
+      integrationLatency = "$context.integrationLatency"
+      responseLatency    = "$context.responseLatency"
+      errorMessage       = "$context.error.message"
+      errorResponseType  = "$context.error.responseType"
+    })
+  }
 }
 
 resource "aws_api_gateway_deployment" "orders_api_deployment" {
@@ -161,7 +188,8 @@ resource "aws_iam_role_policy" "api_gateway_eventbridge_policy" {
           "events:PutEvents"
         ]
         Resource = [
-          var.event_bus_arn
+          var.event_bus_arn,
+          "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/default"
         ]
       }
     ]
@@ -173,6 +201,7 @@ resource "aws_iam_role_policy" "api_gateway_eventbridge_policy" {
 # ============================================================================
 
 data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
 
 # ============================================================================
 # OUTPUTS
@@ -246,6 +275,16 @@ resource "aws_api_gateway_integration_response" "post_200" {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
   }
+
+  response_templates = {
+    "application/json" = <<EOF
+{
+  "message": "Order placed successfully",
+  "orderId": "$context.requestId",
+  "timestamp": "$context.requestTime"
+}
+EOF
+  }
 }
 
 resource "aws_api_gateway_integration_response" "options_200" {
@@ -272,4 +311,13 @@ resource "aws_api_gateway_integration_response" "options_root_200" {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
   }
+}
+
+# ============================================================================
+# CloudWatch Log Group for API Gateway logs
+# ============================================================================
+
+resource "aws_cloudwatch_log_group" "api_gateway_logs" {
+  name              = "/aws/apigateway/${var.environment}-orders-api"
+  retention_in_days = 7
 }

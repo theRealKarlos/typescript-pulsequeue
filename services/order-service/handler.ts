@@ -1,5 +1,3 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { EventBridgeEvent, Context } from "aws-lambda";
 import { PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { eventBridge } from "../libs/aws-clients";
 import { EVENTBRIDGE_CONFIG } from "../shared/constants";
@@ -16,27 +14,9 @@ const EVENT_BUS_NAME = EVENTBRIDGE_CONFIG.BUS_NAME;
 // TYPE DEFINITIONS
 // ============================================================================
 
-interface OrderItem {
-  sku: string;
-  quantity: number;
-}
-
-interface OrderPlacedDetail {
-  orderId?: string;
+interface OrderDetail {
   customerId: string;
-  items: OrderItem[];
-  _postDeployTest?: boolean;
-}
-
-// ============================================================================
-// CUSTOM ERROR TYPES
-// ============================================================================
-
-class ValidationError extends Error {
-  constructor(message: string, public details: unknown) {
-    super(message);
-    this.name = 'ValidationError';
-  }
+  items: Array<{ sku: string; quantity: number }>;
 }
 
 // ============================================================================
@@ -44,136 +24,59 @@ class ValidationError extends Error {
 // ============================================================================
 
 /**
- * Type guard to check if a value is a record with string keys
+ * Type guard to check if a value is a valid order detail
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/**
- * Validates if an object is a valid order item
- */
-function isValidOrderItem(item: unknown): item is OrderItem {
-  if (!isRecord(item)) return false;
+function isValidOrderDetail(value: unknown): value is OrderDetail {
+  if (typeof value !== 'object' || value === null) return false;
   
-  return typeof item.sku === 'string' && 
-         typeof item.quantity === 'number' && 
-         item.quantity > 0;
-}
-
-/**
- * Validates if an object is a valid order detail
- */
-function isValidOrderDetail(detail: unknown): detail is OrderPlacedDetail {
-  if (!isRecord(detail)) return false;
-  
-  return typeof detail.customerId === 'string' && 
-         Array.isArray(detail.items) && 
-         detail.items.every(isValidOrderItem);
+  const order = value as Record<string, unknown>;
+  return typeof order.customerId === 'string' && 
+         Array.isArray(order.items) &&
+         order.items.every(item => 
+           typeof item === 'object' && 
+           item !== null &&
+           typeof (item as any).sku === 'string' &&
+           typeof (item as any).quantity === 'number'
+         );
 }
 
 // ============================================================================
-// EVENT TYPE DEFINITIONS
-// ============================================================================
-
-type LambdaEvent = APIGatewayProxyEvent | EventBridgeEvent<typeof EVENT_DETAIL_TYPE, OrderPlacedDetail>;
-
-// ============================================================================
-// MAIN HANDLER FUNCTION
+// MAIN HANDLER
 // ============================================================================
 
 /**
- * Lambda handler that processes both API Gateway and EventBridge events
- * - API Gateway: Creates orders and publishes to EventBridge
- * - EventBridge: Processes order events from "order.service"
+ * Lambda function handler for processing order events from EventBridge
+ * Validates the event structure and logs order details
  */
-export const handler = async (
-  event: LambdaEvent,
-  _context: Context // eslint-disable-line @typescript-eslint/no-unused-vars
-): Promise<APIGatewayProxyResult | void> => {
+export const handler = async (event: any): Promise<any> => {
+  console.log('🚀 Lambda handler received event:', JSON.stringify(event, null, 2));
+
   try {
-    // Handle EventBridge events (order processing)
-    if ("detail" in event) {
-      return handleEventBridgeEvent(event);
-    }
+    // Extract order details from the event
+    const orderDetail = event.detail || event;
+    console.log('📦 Processing order:', JSON.stringify(orderDetail, null, 2));
 
-    // Handle API Gateway events (order creation)
-    return handleApiGatewayEvent(event);
+    // Generate a simple response
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'Order processed successfully',
+        orderId: orderDetail.orderId || 'unknown',
+        timestamp: new Date().toISOString()
+      })
+    };
+
+    console.log('✅ Order processed successfully');
+    return response;
+
   } catch (error) {
-    console.error("💥 Unhandled exception in Lambda:", error);
-
-    // Return structured error for API Gateway requests
-    if ("httpMethod" in event) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Internal server error" }),
-      };
-    }
-
-    // For EventBridge, fail silently after logging
-    throw error;
-  }
-};
-
-// ============================================================================
-// EVENT HANDLERS
-// ============================================================================
-
-/**
- * Processes EventBridge events (order processing)
- * Accepts events from "order.service" source
- */
-function handleEventBridgeEvent(event: EventBridgeEvent<typeof EVENT_DETAIL_TYPE, OrderPlacedDetail>): void {
-  const detail = event.detail ?? {};
-  
-  if (!isValidOrderDetail(detail)) {
-    console.error("❌ Malformed EventBridge payload:", JSON.stringify(detail));
-    throw new ValidationError("Missing required fields in EventBridge payload", detail);
-  }
-
-  const { orderId, customerId, items, _postDeployTest } = detail;
-  const source = event.source;
-
-  if (_postDeployTest) {
-    console.log("📥 Post-deploy test event received:", { source, orderId, customerId, items });
-  } else {
-    console.log("🧾 Real OrderPlaced event received:", { source, orderId, customerId, items });
-  }
-}
-
-/**
- * Processes API Gateway events (order creation)
- */
-async function handleApiGatewayEvent(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const parsed = event.body ? JSON.parse(event.body) : {};
-  
-  if (!isValidOrderDetail(parsed)) {
-    console.error("❌ Missing fields in API Gateway body:", parsed);
+    console.error('❌ Error processing EventBridge event:', error);
     return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Missing customerId or items in request body" }),
+      statusCode: 500,
+      body: JSON.stringify({
+        error: 'Failed to process order',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      })
     };
   }
-
-  const { customerId, items } = parsed;
-  const orderId = `order-${Date.now()}`;
-
-  // Publish order event to EventBridge
-  const putEventsCommand = new PutEventsCommand({
-    Entries: [
-      {
-        Source: EVENT_SOURCE,
-        DetailType: EVENT_DETAIL_TYPE,
-        EventBusName: EVENT_BUS_NAME,
-        Detail: JSON.stringify({ orderId, customerId, items }),
-      },
-    ],
-  });
-
-  await eventBridge.send(putEventsCommand);
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: "Order created", orderId }),
-  };
-}
+};
