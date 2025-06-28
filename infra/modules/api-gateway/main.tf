@@ -55,7 +55,7 @@ resource "aws_api_gateway_integration" "eventbridge_integration" {
       Source       = var.event_source
       DetailType   = var.event_detail_type
       EventBusName = var.event_bus_name
-      Detail       = "$util.escapeJavaScript($input.json('$'))"
+      Detail       = "$input.json('$')"
     })
   }
 
