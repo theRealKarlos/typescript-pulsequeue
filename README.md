@@ -1,8 +1,8 @@
-# 🚀 TypeScript PulseQueue
+# TypeScript PulseQueue
 
 A concept serverless application built with TypeScript, AWS Lambda, and EventBridge to demonstrate event-driven architecture patterns in a simple, decoupled, and scalable way.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Architecture](#architecture)
@@ -13,7 +13,7 @@ A concept serverless application built with TypeScript, AWS Lambda, and EventBri
 - [Project Structure](#project-structure)
 - [Event Reference](#event-reference)
 
-## 🎯 Overview
+## Overview
 
 TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-driven architecture using AWS services and TypeScript. It processes order events through a decoupled system with EventBridge routing and SQS dead letter queues for reliability. The goal is to showcase best practices for TypeScript, AWS Lambda, and infrastructure-as-code in a modern event-driven design.
 
@@ -26,7 +26,7 @@ TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-dri
 - ✅ **Testing** - Local and integration testing
 - ✅ **Infrastructure as Code** - Terraform-managed AWS resources
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
@@ -52,7 +52,7 @@ EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
 [Optionally: API Gateway → Lambda → Order Processing Logic]
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend
 
@@ -74,7 +74,7 @@ EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
 - **ts-node** - TypeScript execution
 - **Cross-env** - Environment variable management
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -97,7 +97,7 @@ npm install
 aws configure
 ```
 
-## 💻 Development
+## Development
 
 ### Available Scripts
 
@@ -135,7 +135,7 @@ This will:
 - Validate the response
 - Display results
 
-## 🚀 Deployment
+## Deployment
 
 ### Full Deployment
 
@@ -171,7 +171,7 @@ npm run apply:dev
 npm run postdeploy:dev
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TypeScript-PulseQueue/
@@ -199,7 +199,7 @@ TypeScript-PulseQueue/
 └── README.md                   # This file
 ```
 
-## 📚 Event Reference
+## Event Reference
 
 ### EventBridge Event Example
 
@@ -236,7 +236,7 @@ TypeScript-PulseQueue/
 }
 ```
 
-## 🌍 Environment
+## Environment
 
 ### Current Configuration
 
@@ -252,7 +252,7 @@ TypeScript-PulseQueue/
 - `AWS_ACCESS_KEY_ID` - AWS access key
 - `AWS_SECRET_ACCESS_KEY` - AWS secret key
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 ### Potential Additions
 
@@ -263,7 +263,7 @@ TypeScript-PulseQueue/
 - **Cognito** - Authentication
 - **X-Ray** - Distributed tracing
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -271,11 +271,11 @@ TypeScript-PulseQueue/
 4. Run tests and linting
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the ISC License.
 
-## 🆘 Support
+## Support
 
 For issues and questions:
 
