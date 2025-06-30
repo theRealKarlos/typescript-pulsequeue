@@ -1,6 +1,6 @@
 # 🚀 TypeScript PulseQueue
 
-A modern serverless application built with TypeScript, AWS Lambda, and EventBridge that processes order events in a decoupled, scalable architecture.
+A concept serverless application built with TypeScript, AWS Lambda, and EventBridge to demonstrate event-driven architecture patterns in a simple, decoupled, and scalable way.
 
 ## 📋 Table of Contents
 
@@ -11,15 +11,15 @@ A modern serverless application built with TypeScript, AWS Lambda, and EventBrid
 - [Development](#development)
 - [Deployment](#deployment)
 - [Project Structure](#project-structure)
-- [API Reference](#api-reference)
+- [Event Reference](#event-reference)
 
 ## 🎯 Overview
 
-TypeScript PulseQueue is a serverless application that demonstrates event-driven architecture using AWS services. It processes order events through a decoupled system with EventBridge routing and SQS dead letter queues for reliability.
+TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-driven architecture using AWS services and TypeScript. It processes order events through a decoupled system with EventBridge routing and SQS dead letter queues for reliability. The goal is to showcase best practices for TypeScript, AWS Lambda, and infrastructure-as-code in a modern event-driven design.
 
 ### Key Features
 
-- ✅ **Dual Event Handling** - API Gateway and EventBridge events
+- ✅ **Dual Event Handling** - Lambda handler can process both API Gateway and EventBridge events (the current concept focuses on EventBridge, but API Gateway support is built-in)
 - ✅ **Type Safety** - Full TypeScript implementation with strict checking
 - ✅ **Error Handling** - Comprehensive validation with dead letter queues
 - ✅ **Code Quality** - ESLint integration and automated checks
@@ -32,8 +32,8 @@ TypeScript PulseQueue is a serverless application that demonstrates event-driven
 
 1. **Lambda Function** (`order-service-handler`)
 
-   - Processes both API Gateway and EventBridge events
-   - Creates orders and publishes events
+   - Capable of processing both API Gateway and EventBridge events
+   - Contains order processing logic
    - Runs on Node.js 22.x runtime
 
 2. **EventBridge Bus** (`dev-pulsequeue-bus`)
@@ -47,16 +47,9 @@ TypeScript PulseQueue is a serverless application that demonstrates event-driven
 
 ### Event Flow
 
-#### Order Creation (API Gateway → EventBridge)
-
 ```
-Client Request → API Gateway → Lambda → EventBridge → SQS (if failed)
-```
-
-#### Order Processing (EventBridge → Lambda)
-
-```
-EventBridge → Lambda → Order Processing Logic
+EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
+[Optionally: API Gateway → Lambda → Order Processing Logic]
 ```
 
 ## 🛠️ Technology Stack
@@ -137,7 +130,7 @@ npm run test:dev
 
 This will:
 
-- Create a mock API Gateway event
+- Create a mock EventBridge or API Gateway event
 - Execute the Lambda handler
 - Validate the response
 - Display results
@@ -206,20 +199,9 @@ TypeScript-PulseQueue/
 └── README.md                   # This file
 ```
 
-## 📚 API Reference
+## 📚 Event Reference
 
-### Event Examples
-
-#### Order Creation Event (API Gateway)
-
-```json
-{
-  "customerId": "karl-001",
-  "items": [{ "sku": "JERS-1023", "quantity": 2 }]
-}
-```
-
-#### EventBridge Event
+### EventBridge Event Example
 
 ```json
 {
@@ -234,7 +216,7 @@ TypeScript-PulseQueue/
 }
 ```
 
-### Response Format
+### Lambda Response Format
 
 #### Success Response
 
@@ -277,7 +259,7 @@ TypeScript-PulseQueue/
 - **DynamoDB** - Order persistence
 - **SNS** - Notifications
 - **CloudWatch** - Enhanced monitoring
-- **API Gateway** - REST API endpoints
+- **API Gateway** - REST API endpoints (Lambda handler supports this, but not included in this concept deployment)
 - **Cognito** - Authentication
 - **X-Ray** - Distributed tracing
 
@@ -303,4 +285,4 @@ For issues and questions:
 
 ---
 
-**Built with ❤️ using TypeScript and AWS Serverless**
+**Built as a concept with ❤️ using TypeScript and AWS Serverless**
