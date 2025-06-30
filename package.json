@@ -7,11 +7,11 @@
   },
   "scripts": {
     "test:dev": "ts-node scripts/test-order.ts",
-    "build:dev": "ts-node scripts/build-order.ts",
+    "build:lambda:dev": "ts-node scripts/build-lambda.ts",
     "test:eventbridge": "ts-node scripts/test-eventbridge-cli.ts",
     "plan:dev": "cd infra/envs/dev && terraform plan -out=tfplan",
     "apply:dev": "cd infra/envs/dev && terraform apply tfplan",
-    "deploy:dev": "npm run test:dev && npm run build:dev && npm run plan:dev && npm run apply:dev && npm run postdeploy:dev",
+    "deploy:dev": "npm run test:dev && npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip && npm run plan:dev && npm run apply:dev && npm run postdeploy:dev",
     "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts",
     "lint": "ts-node scripts/lint-test.ts",
     "lint:fix": "eslint services/**/*.ts scripts/**/*.ts --fix"
@@ -24,6 +24,7 @@
     "@eslint/js": "^9.30.0",
     "@types/aws-lambda": "^8.10.150",
     "@types/aws-sdk": "^0.0.42",
+    "@types/minimist": "^1.2.5",
     "@types/node": "^24.0.4",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
@@ -40,6 +41,7 @@
     "@aws-sdk/client-eventbridge": "^3.839.0",
     "@aws-sdk/client-sqs": "^3.839.0",
     "@types/node-fetch": "^2.6.12",
+    "minimist": "^1.2.8",
     "node-fetch": "^3.3.2"
   }
 }

@@ -2,14 +2,17 @@ import { build, BuildOptions } from 'esbuild';
 import { execSync } from 'child_process';
 import { mkdirSync, existsSync, rmSync } from 'fs';
 import path from 'path';
+import minimist from 'minimist';
 
 // ============================================================================
-// CONFIGURATION
+// ARGUMENT PARSING
 // ============================================================================
 
-const ENTRY_POINT = 'services/order-service/handler.ts';
-const OUTPUT_DIR = 'dist/order-service';
-const ZIP_FILE = 'dist/order-service.zip';
+const args = minimist(process.argv.slice(2));
+
+const ENTRY_POINT = args.entry || 'services/order-service/handler.ts';
+const OUTPUT_DIR = args.outdir || 'dist/order-service';
+const ZIP_FILE = args.zip || 'dist/order-service.zip';
 const TARGET_NODE_VERSION = 'node22';
 const PLATFORM = 'node';
 

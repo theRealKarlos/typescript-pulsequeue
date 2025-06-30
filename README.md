@@ -105,8 +105,9 @@ aws configure
 # Run local Lambda test
 npm run test:dev
 
-# Build Lambda package
-npm run build:dev
+# Build any Lambda handler (parameterized)
+npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
+npm run build:lambda:dev -- --entry services/other-service/handler.ts --outdir dist/other-service --zip dist/other-service.zip
 
 # Run linting
 npm run lint
@@ -159,7 +160,7 @@ This comprehensive deployment process:
 npm run test:dev
 
 # Step 2: Build
-npm run build:dev
+npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
 
 # Step 3: Plan infrastructure changes
 npm run plan:dev
@@ -183,7 +184,7 @@ TypeScript-PulseQueue/
 │   └── shared/
 │       └── constants.ts        # Shared configuration
 ├── scripts/
-│   ├── build-order.ts          # Build & package Lambda
+│   ├── build-lambda.ts         # Parameterized Lambda build script
 │   ├── test-order.ts           # Local Lambda testing
 │   ├── post-deploy-test.ts     # Integration testing
 │   └── lint-test.ts            # Code quality checks
