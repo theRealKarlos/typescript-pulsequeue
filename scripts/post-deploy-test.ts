@@ -1,5 +1,6 @@
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { EVENTBRIDGE_CONFIG } from "../services/shared/constants";
+import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
 
 // ============================================================================
 // CONFIGURATION
@@ -52,6 +53,57 @@ const event: EventBridgeEvent = {
 };
 
 // ============================================================================
+// LOG FETCHING UTILS
+// ============================================================================
+
+const LOG_GROUP_NAME = "/aws/lambda/dev-order-service-handler";
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchRecentLogs(eventBridgeEventId: string) {
+  const logsClient = new CloudWatchLogsClient({ region });
+  const now = Date.now();
+  const startTime = now - 1 * 60 * 1000; // 1 minute ago
+  const endTime = now;
+
+  const command = new FilterLogEventsCommand({
+    logGroupName: LOG_GROUP_NAME,
+    startTime,
+    endTime,
+    limit: 50,
+  });
+
+  try {
+    const response = await logsClient.send(command);
+    let found = false;
+    if (response.events && response.events.length > 0) {
+      console.log(`\n=== Last 1 minute of logs from ${LOG_GROUP_NAME} ===`);
+      for (const event of response.events) {
+        const ts = event.timestamp ? new Date(event.timestamp).toISOString() : '';
+        console.log(`[${ts}] ${event.message}`);
+        if (event.message && event.message.includes(eventBridgeEventId)) {
+          found = true;
+        }
+      }
+    } else {
+      console.log(`\nNo log events found in the last 1 minute for ${LOG_GROUP_NAME}.`);
+    }
+    if (found) {
+      console.log(`\n✅ EventBridge EventId '${eventBridgeEventId}' found in logs. Test PASSED.`);
+      process.exit(0);
+    } else {
+      console.log(`\n❌ EventBridge EventId '${eventBridgeEventId}' NOT found in logs. Test FAILED.`);
+      process.exit(1);
+    }
+  } catch (err) {
+    console.error(`Failed to fetch logs: ${err instanceof Error ? err.message : err}`);
+    process.exit(1);
+  }
+}
+
+// ============================================================================
 // VALIDATION FUNCTIONS
 // ============================================================================
 
@@ -83,7 +135,7 @@ function isValidEventBridgeResponse(result: unknown): result is {
  * Sends a test event to EventBridge to verify the deployed Lambda function
  * Validates the response and handles errors appropriately
  */
-async function runPostDeployTest(): Promise<void> {
+async function runPostDeployTest(): Promise<string> {
   try {
     const command = new PutEventsCommand({ Entries: [event] });
     const result = await client.send(command);
@@ -98,7 +150,15 @@ async function runPostDeployTest(): Promise<void> {
       process.exit(1);
     }
 
+    const eventId = result.Entries && result.Entries[0] && typeof result.Entries[0].EventId === 'string'
+      ? result.Entries[0].EventId
+      : null;
     console.log("EventBridge test event successfully sent:", result.Entries);
+    if (!eventId) {
+      console.error("Could not retrieve EventId from EventBridge response.");
+      process.exit(1);
+    }
+    return eventId;
   } catch (err) {
     console.error(`Failed to send EventBridge event: ${err instanceof Error ? err.message : err}`);
     process.exit(1);
@@ -109,4 +169,9 @@ async function runPostDeployTest(): Promise<void> {
 // EXECUTION
 // ============================================================================
 
-runPostDeployTest();
+(async () => {
+  const eventBridgeEventId = await runPostDeployTest();
+  console.log("Waiting 10 seconds for logs to appear...");
+  await sleep(10000);
+  await fetchRecentLogs(eventBridgeEventId);
+})();
