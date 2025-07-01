@@ -9,22 +9,21 @@ function runStep(command: string, args: string[], stepName: string) {
   }
 }
 
-// 1. Local Lambda test
+// 1. Lint all code
 runStep(
   'npm',
-  [
-    'run',
-    'test:lambda:dev',
-    '--',
-    '--handler',
-    'services/order-service/handler.ts',
-    '--event',
-    'scripts/order-service-event.json',
-  ],
-  'Local Lambda Test',
+  ['run', 'lint:all'],
+  'ESLint Code Quality Check',
 );
 
-// 2. Build Lambda
+// 2. Run Jest unit tests
+runStep(
+  'npm',
+  ['test'],
+  'Jest Unit Tests',
+);
+
+// 3. Build Lambda
 runStep(
   'npm',
   [
@@ -41,13 +40,13 @@ runStep(
   'Build Lambda',
 );
 
-// 3. Terraform plan
+// 4. Terraform plan
 runStep('npm', ['run', 'plan:dev'], 'Terraform Plan');
 
-// 4. Terraform apply
+// 5. Terraform apply
 runStep('npm', ['run', 'apply:dev'], 'Terraform Apply');
 
-// 5. Post-deploy test
+// 6. Post-deploy test
 runStep('npm', ['run', 'postdeploy:dev'], 'Post-Deploy Test');
 
 console.log('\n✅ Deployment pipeline completed successfully!');

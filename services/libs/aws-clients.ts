@@ -1,5 +1,6 @@
 import { EventBridgeClient, EventBridgeClientConfig } from '@aws-sdk/client-eventbridge';
 import { SQSClient, SQSClientConfig } from '@aws-sdk/client-sqs';
+import { DynamoDBClient, DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
 // Add more clients here as needed (e.g., DynamoDB, SNS, etc.)
 
 // ============================================================================
@@ -28,12 +29,17 @@ export function createSQSClient(config?: SQSClientConfig) {
   return new SQSClient({ region: DEFAULT_REGION, ...config });
 }
 
+export function createDynamoDBClient(config?: DynamoDBClientConfig) {
+  return new DynamoDBClient({ region: DEFAULT_REGION, ...config });
+}
+
 // ============================================================================
 // DEFAULT CLIENT EXPORTS (for backward compatibility)
 // ============================================================================
 
 export const eventBridge = createEventBridgeClient();
 export const sqs = createSQSClient();
+export const dynamoDB = createDynamoDBClient();
 
 // ============================================================================
 // USAGE EXAMPLES
@@ -41,3 +47,4 @@ export const sqs = createSQSClient();
 // import { createEventBridgeClient } from '@services/libs/aws-clients';
 // const paymentBusClient = createEventBridgeClient({ region: 'eu-west-2' });
 // const orderBusClient = createEventBridgeClient({ region: 'us-east-1' });
+// Usage: const inventoryDb = createDynamoDBClient({ region: 'eu-west-2' });

@@ -1,0 +1,26 @@
+[
+  {
+    "item_id": { "S": "prod-001" },
+    "name": { "S": "Test Product" },
+    "stock": { "N": "10" },
+    "reserved": { "N": "0" }
+  },
+  {
+    "item_id": { "S": "prod-002" },
+    "name": { "S": "Widget Deluxe" },
+    "stock": { "N": "15" },
+    "reserved": { "N": "0" }
+  },
+  {
+    "item_id": { "S": "prod-003" },
+    "name": { "S": "Gadget Pro" },
+    "stock": { "N": "8" },
+    "reserved": { "N": "0" }
+  },
+  {
+    "item_id": { "S": "prod-004" },
+    "name": { "S": "Accessory Pack" },
+    "stock": { "N": "20" },
+    "reserved": { "N": "0" }
+  }
+] 

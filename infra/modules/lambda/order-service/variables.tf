@@ -14,3 +14,8 @@ variable "environment" {
   description = "The environment name (e.g., dev, staging, prod)"
   type        = string
 }
+
+variable "inventory_table_arn" {
+  description = "ARN of the DynamoDB inventory table"
+  type        = string
+}

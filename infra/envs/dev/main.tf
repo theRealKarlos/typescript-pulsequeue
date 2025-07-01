@@ -10,9 +10,16 @@ provider "aws" {
 # EVENTBRIDGE INFRASTRUCTURE
 # ============================================================================
 
-module "eventbridge_bus" {
+module "order_eventbridge_bus" {
   source      = "../../modules/eventbridge/bus"
   environment = var.environment
+  bus_name    = "${var.environment}-order-bus"
+}
+
+module "payment_eventbridge_bus" {
+  source      = "../../modules/eventbridge/bus"
+  environment = var.environment
+  bus_name    = "${var.environment}-payment-bus"
 }
 
 # ============================================================================
@@ -20,10 +27,11 @@ module "eventbridge_bus" {
 # ============================================================================
 
 module "order_service" {
-  source          = "../../modules/lambda/order-service"
-  lambda_zip_path = abspath("${path.module}/../../../dist/order-service.zip")
-  function_name   = "${var.environment}-order-service-handler"
-  environment     = var.environment
+  source              = "../../modules/lambda/order-service"
+  lambda_zip_path     = abspath("${path.module}/../../../dist/order-service.zip")
+  function_name       = "${var.environment}-order-service-handler"
+  environment         = var.environment
+  inventory_table_arn = module.inventory_table.table_arn
 }
 
 # ============================================================================
@@ -33,9 +41,18 @@ module "order_service" {
 module "eventbridge_order_placed" {
   source      = "../../modules/eventbridge/rule"
   environment = var.environment
-  bus_name    = module.eventbridge_bus.bus_name
+  bus_name    = module.order_eventbridge_bus.bus_name
   lambda_arn  = module.order_service.lambda_arn
   region      = var.region
+}
+
+# ============================================================================
+# INVENTORY TABLE
+# ============================================================================
+
+module "inventory_table" {
+  source     = "../../modules/dynamodb/inventory"
+  table_name = "dev-inventory-table"
 }
 
 # ============================================================================
@@ -50,14 +67,18 @@ output "lambda_function_arn" {
   value = module.order_service.lambda_arn
 }
 
-output "eventbridge_bus_name" {
-  value = module.eventbridge_bus.bus_name
-}
-
 output "order_placed_rule_name" {
   value = module.eventbridge_order_placed.rule_name
 }
 
 output "order_placed_rule_arn" {
   value = module.eventbridge_order_placed.rule_arn
+}
+
+output "inventory_table_name" {
+  value = module.inventory_table.table_name
+}
+
+output "inventory_table_arn" {
+  value = module.inventory_table.table_arn
 }

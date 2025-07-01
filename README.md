@@ -19,11 +19,11 @@ TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-dri
 
 ### Key Features
 
-- ✅ **Dual Event Handling** - Lambda handler can process both API Gateway and EventBridge events (the current concept focuses on EventBridge, but API Gateway support is built-in)
+- ✅ **EventBridge-Driven Lambda** - Focused on event-driven flows
 - ✅ **Type Safety** - Full TypeScript implementation with strict checking
 - ✅ **Error Handling** - Comprehensive validation with dead letter queues
 - ✅ **Code Quality** - ESLint integration and automated checks
-- ✅ **Testing** - Local and integration testing
+- ✅ **Testing** - Jest-based local unit testing and integration testing
 - ✅ **Infrastructure as Code** - Terraform-managed AWS resources
 
 ## Architecture
@@ -31,13 +31,11 @@ TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-dri
 ### Core Components
 
 1. **Lambda Function** (`order-service-handler`)
-
-   - Capable of processing both API Gateway and EventBridge events
+   - Processes EventBridge events
    - Contains order processing logic
    - Runs on Node.js 22.x runtime
 
 2. **EventBridge Bus** (`dev-pulsequeue-bus`)
-
    - Central event routing system
    - Handles order events with dead letter queue
 
@@ -49,7 +47,6 @@ TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-dri
 
 ```
 EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
-[Optionally: API Gateway → Lambda → Order Processing Logic]
 ```
 
 ## Technology Stack
@@ -67,6 +64,7 @@ EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
 - **Terraform** - Infrastructure as Code
 - **esbuild** - Fast TypeScript bundling
 - **ESLint** - Code quality enforcement
+- **Jest** - Unit testing
 
 ### Development
 
@@ -102,8 +100,11 @@ aws configure
 ### Available Scripts
 
 ```bash
-# Run local Lambda test for the order service
-npm run test:lambda:dev -- --handler services/order-service/handler.ts --event scripts/order-service-event.json
+# Run Jest unit tests for all Lambdas
+npm test
+
+# Run Jest unit tests for the order service Lambda only
+npm run test:order-service
 
 # Build any Lambda handler (parameterized)
 npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
@@ -117,32 +118,31 @@ npm run lint:fix
 
 # Lint all files (for CI or pre-push)
 npm run lint:all
-
-# Plan Terraform changes
-npm run plan:dev
-
-# Apply Terraform changes
-npm run apply:dev
 ```
 
-### Local Testing
+### Local Unit Testing (Jest)
+
+Jest is used for all Lambda unit tests. Each handler has its own test file (e.g., `scripts/order-service-handler.test.ts`).
 
 ```bash
-# Test Lambda handler locally (order service example)
-npm run test:lambda:dev -- --handler services/order-service/handler.ts --event scripts/order-service-event.json
+npm test
+# or for a specific handler
+npm run test:order-service
 ```
 
-This will:
+- All AWS SDK calls are mocked (no real AWS calls are made)
+- Event payloads are provided as JSON files or inline in the test
+- Tests are fast, isolated, and CI-friendly
 
-- Import and invoke the specified Lambda handler locally
-- Use the provided event JSON as input
-- Print the result to the console
+### Local Integration Testing
+
+You can still run integration tests (e.g., EventBridge, post-deploy) using the provided scripts.
 
 ## Deployment
 
 ### Recommended: TypeScript Deployment Pipeline
 
-You can now run your full deployment pipeline using a TypeScript orchestration script for single, reliable execution:
+Run your full deployment pipeline using the TypeScript orchestration script:
 
 ```bash
 npm run deploy:dev:ts
@@ -150,11 +150,12 @@ npm run deploy:dev:ts
 
 This will:
 
-1. Run the local Lambda test
-2. Build the Lambda package
-3. Run Terraform plan
-4. Run Terraform apply
-5. Run the post-deploy integration test
+1. Run ESLint code quality checks
+2. Run all Jest unit tests
+3. Build the Lambda package
+4. Run Terraform plan
+5. Run Terraform apply
+6. Run the post-deploy integration test
 
 **Benefits:**
 
@@ -162,18 +163,6 @@ This will:
 - Cross-platform (works on Windows, macOS, Linux)
 - Clear, color-coded output for each step
 - Easy to extend and maintain as your pipeline grows
-
-### Manual Steps (if needed)
-
-You can still run each step individually using the scripts in `package.json`:
-
-```bash
-npm run test:lambda:dev -- --handler services/order-service/handler.ts --event scripts/order-service-event.json
-npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
-npm run plan:dev
-npm run apply:dev
-npm run postdeploy:dev
-```
 
 ## Project Structure
 
@@ -188,7 +177,9 @@ TypeScript-PulseQueue/
 │       └── constants.ts        # Shared configuration
 ├── scripts/
 │   ├── build-lambda.ts         # Parameterized Lambda build script
-│   ├── test-lambda.ts          # Parameterized local Lambda test script
+│   ├── order-service-handler.test.ts # Jest unit tests for order-service Lambda
+│   ├── order-service-event.local.json # Sample event for local unit test
+│   ├── order-service-event.postdeploy.json # Sample event for post-deploy test
 │   ├── post-deploy-test.ts     # Integration testing
 │   ├── deploy-dev.ts           # TypeScript deployment pipeline
 │   └── lint-test.ts            # Code quality checks
@@ -203,6 +194,13 @@ TypeScript-PulseQueue/
 ├── eslint.config.mjs           # ESLint configuration
 └── README.md                   # This file
 ```
+
+## Lambda Unit Testing with Jest
+
+- Each Lambda handler has a dedicated Jest test file
+- AWS SDK v3 clients are mocked using `aws-sdk-client-mock`
+- Event payloads are provided as JSON or inline
+- Tests are fast, reliable, and do not require AWS credentials
 
 ## Event Reference
 
@@ -261,12 +259,11 @@ TypeScript-PulseQueue/
 
 ### Potential Additions
 
-- **DynamoDB** - Order persistence
-- **SNS** - Notifications
-- **CloudWatch** - Enhanced monitoring
-- **API Gateway** - REST API endpoints (Lambda handler supports this, but not included in this concept deployment)
-- **Cognito** - Authentication
-- **X-Ray** - Distributed tracing
+- More Lambda handlers and event types
+- End-to-end integration tests
+- CI/CD pipeline integration
+- Monitoring and alerting
+- Advanced error handling and retries
 
 ## Contributing
 

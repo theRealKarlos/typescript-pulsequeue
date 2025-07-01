@@ -1,16 +1,16 @@
 console.log('=== POST DEPLOY TEST STARTED ===');
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
-import { EVENTBRIDGE_CONFIG } from '../services/shared/constants';
+import { ORDER_EVENTBRIDGE_CONFIG } from '../services/shared/constants';
 import { CloudWatchLogsClient, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const DEFAULT_REGION = EVENTBRIDGE_CONFIG.REGION;
-const EVENT_SOURCE = EVENTBRIDGE_CONFIG.SOURCE;
-const EVENT_DETAIL_TYPE = EVENTBRIDGE_CONFIG.DETAIL_TYPE;
-const EVENT_BUS_NAME = EVENTBRIDGE_CONFIG.BUS_NAME;
+const DEFAULT_REGION = ORDER_EVENTBRIDGE_CONFIG.REGION;
+const EVENT_SOURCE = ORDER_EVENTBRIDGE_CONFIG.SOURCE;
+const EVENT_DETAIL_TYPE = ORDER_EVENTBRIDGE_CONFIG.DETAIL_TYPE;
+const EVENT_BUS_NAME = ORDER_EVENTBRIDGE_CONFIG.BUS_NAME;
 
 // ============================================================================
 // TYPE DEFINITIONS

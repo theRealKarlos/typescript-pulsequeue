@@ -3,5 +3,5 @@
 # ============================================================================
 
 resource "aws_cloudwatch_event_bus" "custom" {
-  name = "${var.environment}-pulsequeue-bus"
+  name = var.bus_name
 }

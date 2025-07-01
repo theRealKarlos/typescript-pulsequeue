@@ -1,0 +1,9 @@
+{
+  "customerId": "test-customer-123",
+  "items": [
+    {
+      "sku": "prod-001",
+      "quantity": 2
+    }
+  ]
+} 
