@@ -102,8 +102,8 @@ aws configure
 ### Available Scripts
 
 ```bash
-# Run local Lambda test
-npm run test:dev
+# Run local Lambda test for the order service
+npm run test:lambda:dev -- --handler services/order-service/handler.ts --event scripts/order-service-event.json
 
 # Build any Lambda handler (parameterized)
 npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
@@ -115,6 +115,9 @@ npm run lint
 # Fix linting issues
 npm run lint:fix
 
+# Lint all files (for CI or pre-push)
+npm run lint:all
+
 # Plan Terraform changes
 npm run plan:dev
 
@@ -125,50 +128,50 @@ npm run apply:dev
 ### Local Testing
 
 ```bash
-# Test Lambda handler locally
-npm run test:dev
+# Test Lambda handler locally (order service example)
+npm run test:lambda:dev -- --handler services/order-service/handler.ts --event scripts/order-service-event.json
 ```
 
 This will:
 
-- Create a mock EventBridge or API Gateway event
-- Execute the Lambda handler
-- Validate the response
-- Display results
+- Import and invoke the specified Lambda handler locally
+- Use the provided event JSON as input
+- Print the result to the console
 
 ## Deployment
 
-### Full Deployment
+### Recommended: TypeScript Deployment Pipeline
+
+You can now run your full deployment pipeline using a TypeScript orchestration script for single, reliable execution:
 
 ```bash
-npm run deploy:dev
+npm run deploy:dev:ts
 ```
 
-This comprehensive deployment process:
+This will:
 
-1. **Local Test** - Validates Lambda handler locally
-2. **Lint Check** - Ensures code quality
-3. **Build** - Compiles TypeScript and creates deployment package
-4. **Terraform Plan** - Shows infrastructure changes
-5. **Terraform Apply** - Deploys to AWS
-6. **Post-Deploy Test** - Validates EventBridge integration
+1. Run the local Lambda test
+2. Build the Lambda package
+3. Run Terraform plan
+4. Run Terraform apply
+5. Run the post-deploy integration test
 
-### Manual Steps
+**Benefits:**
+
+- Each step runs exactly once (no double execution)
+- Cross-platform (works on Windows, macOS, Linux)
+- Clear, color-coded output for each step
+- Easy to extend and maintain as your pipeline grows
+
+### Manual Steps (if needed)
+
+You can still run each step individually using the scripts in `package.json`:
 
 ```bash
-# Step 1: Test locally
-npm run test:dev
-
-# Step 2: Build
+npm run test:lambda:dev -- --handler services/order-service/handler.ts --event scripts/order-service-event.json
 npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
-
-# Step 3: Plan infrastructure changes
 npm run plan:dev
-
-# Step 4: Apply changes
 npm run apply:dev
-
-# Step 5: Test integration
 npm run postdeploy:dev
 ```
 
@@ -185,8 +188,9 @@ TypeScript-PulseQueue/
 │       └── constants.ts        # Shared configuration
 ├── scripts/
 │   ├── build-lambda.ts         # Parameterized Lambda build script
-│   ├── test-order.ts           # Local Lambda testing
+│   ├── test-lambda.ts          # Parameterized local Lambda test script
 │   ├── post-deploy-test.ts     # Integration testing
+│   ├── deploy-dev.ts           # TypeScript deployment pipeline
 │   └── lint-test.ts            # Code quality checks
 ├── infra/
 │   ├── modules/

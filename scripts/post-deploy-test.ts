@@ -1,3 +1,4 @@
+console.log('=== POST DEPLOY TEST STARTED ===');
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { EVENTBRIDGE_CONFIG } from "../services/shared/constants";
 import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";

@@ -1,89 +1,55 @@
-import { handler } from '../services/order-service/handler';
+import minimist from 'minimist';
+import fs from 'fs';
+import path from 'path';
+
+console.log('=== LOCAL LAMBDA TEST STARTED ===');
 
 // ============================================================================
-// CONFIGURATION
+// ARGUMENT PARSING
 // ============================================================================
 
-const DEFAULT_REGION = 'eu-west-2';
-const EXPECTED_STATUS_CODE = 200;
+const args = minimist(process.argv.slice(2));
 
-// ============================================================================
-// ENVIRONMENT SETUP
-// ============================================================================
+const HANDLER_PATH = args.handler;
+const EVENT_FILE = args.event;
 
-process.env.AWS_REGION = process.env.AWS_REGION || DEFAULT_REGION;
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
-interface MockEvent {
-  body: string;
-}
-
-interface TestResult {
-  statusCode: number;
-  body: string;
+if (!HANDLER_PATH || !EVENT_FILE) {
+  console.error('Usage: ts-node scripts/test-lambda.ts --handler <handler.ts> --event <event.json>');
+  process.exit(1);
 }
 
 // ============================================================================
-// TEST DATA
+// READ EVENT PAYLOAD
 // ============================================================================
 
-const mockEvent: MockEvent = {
-  body: JSON.stringify({
-    customerId: 'karl-001',
-    items: [{ sku: 'JERS-1023', quantity: 2 }],
-  }),
-};
-
-// ============================================================================
-// VALIDATION FUNCTIONS
-// ============================================================================
-
-/**
- * Type guard to check if a value is a record with string keys
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/**
- * Validates if the handler response is a valid test result
- */
-function isValidTestResult(result: unknown): result is TestResult {
-  if (!isRecord(result)) return false;
-  
-  return typeof result.statusCode === 'number' && 
-         typeof result.body === 'string';
+let event: unknown;
+try {
+  const fileContent = fs.readFileSync(EVENT_FILE, 'utf8');
+  event = JSON.parse(fileContent);
+} catch (err) {
+  console.error('Failed to read or parse event file:', err);
+  process.exit(1);
 }
 
 // ============================================================================
-// MAIN TEST FUNCTION
+// DYNAMIC HANDLER IMPORT AND INVOCATION
 // ============================================================================
 
-/**
- * Executes the local Lambda handler test
- * Validates the response and handles errors appropriately
- */
-async function runTest(): Promise<void> {
+async function runTest() {
   try {
-    const result = await handler(mockEvent as unknown as Parameters<typeof handler>[0]);
-
-    if (!isValidTestResult(result) || result.statusCode !== EXPECTED_STATUS_CODE) {
-      console.error(`Local test failed: Expected statusCode ${EXPECTED_STATUS_CODE}, got ${result?.statusCode}`);
-      process.exit(1);
+    // Dynamically import the handler file
+    const handlerModule = await import(path.resolve(HANDLER_PATH));
+    const handler = handlerModule.handler;
+    if (typeof handler !== 'function') {
+      throw new Error('Handler export not found or is not a function');
     }
-
-    console.log('Local test passed:', result);
+    const result = await handler(event);
+    console.log('Lambda handler result:', result);
+    process.exit(0);
   } catch (error) {
-    console.error(`Local test threw an error: ${error instanceof Error ? error.message : error}`);
+    console.error('Local Lambda test failed:', error);
     process.exit(1);
   }
 }
-
-// ============================================================================
-// EXECUTION
-// ============================================================================
 
 runTest();

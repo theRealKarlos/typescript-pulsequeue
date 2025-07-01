@@ -46,8 +46,8 @@ const buildOptions: BuildOptions = {
  */
 function runLintCheck(): void {
   try {
-    console.log('🔍 Running lint check...');
-    execSync('npm run lint', { stdio: 'inherit' });
+    console.log('�� Running lint check on entry file...');
+    execSync(`npx eslint ${ENTRY_POINT}`, { stdio: 'inherit' });
     console.log('✅ Lint check passed.');
   } catch {
     console.error('❌ Lint check failed. Please fix the issues before building.');
