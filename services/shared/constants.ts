@@ -13,4 +13,4 @@ export const EVENTBRIDGE_CONFIG = {
 // TYPE EXPORTS
 // ============================================================================
 
-export type EventBridgeConfig = typeof EVENTBRIDGE_CONFIG; 
+export type EventBridgeConfig = typeof EVENTBRIDGE_CONFIG;

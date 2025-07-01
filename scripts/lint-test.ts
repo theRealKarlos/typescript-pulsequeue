@@ -4,16 +4,9 @@ import { execSync } from 'child_process';
 // CONFIGURATION
 // ============================================================================
 
-const LINT_PATTERNS = [
-  'services/**/*.ts',
-  'scripts/**/*.ts'
-];
+const LINT_PATTERNS = ['services/**/*.ts', 'scripts/**/*.ts'];
 
-const EXCLUDED_PATTERNS = [
-  'node_modules/**/*',
-  'dist/**/*',
-  'infra/**/*'
-];
+const EXCLUDED_PATTERNS = ['node_modules/**/*', 'dist/**/*', 'infra/**/*'];
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -25,17 +18,19 @@ const EXCLUDED_PATTERNS = [
 function runLint(): { success: boolean; output: string } {
   try {
     const patterns = LINT_PATTERNS.join(' ');
-    const excludeArgs = EXCLUDED_PATTERNS.map(pattern => `--ignore-pattern "${pattern}"`).join(' ');
-    
+    const excludeArgs = EXCLUDED_PATTERNS.map((pattern) => `--ignore-pattern "${pattern}"`).join(
+      ' ',
+    );
+
     const command = `npx eslint ${patterns} ${excludeArgs}`;
     console.log('🔍 Running ESLint...');
     console.log(`Command: ${command}`);
-    
-    const output = execSync(command, { 
+
+    const output = execSync(command, {
       encoding: 'utf8',
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
-    
+
     return { success: true, output };
   } catch (error: unknown) {
     let output = '';
@@ -51,9 +46,9 @@ function runLint(): { success: boolean; output: string } {
     } else {
       output = String(error);
     }
-    return { 
-      success: false, 
-      output
+    return {
+      success: false,
+      output,
     };
   }
 }
@@ -84,15 +79,15 @@ function formatResults(success: boolean, output: string): void {
  */
 function runLintTest(): void {
   console.log('🚀 Starting ESLint test...\n');
-  
+
   const { success, output } = runLint();
   formatResults(success, output);
-  
+
   if (!success) {
     console.log('\n❌ Lint test failed. Please fix the issues above.');
     process.exit(1);
   }
-  
+
   console.log('\n🎉 All lint checks passed!');
 }
 
@@ -100,4 +95,4 @@ function runLintTest(): void {
 // EXECUTION
 // ============================================================================
 
-runLintTest(); 
+runLintTest();

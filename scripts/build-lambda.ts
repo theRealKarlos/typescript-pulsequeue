@@ -102,10 +102,10 @@ async function runBuild(): Promise<void> {
   try {
     // Step 1: Lint check
     runLintCheck();
-    
+
     // Step 2: Cleanup
     cleanup();
-    
+
     // Step 3: Ensure output directory exists
     ensureDirectoryExists(outDir);
 

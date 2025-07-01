@@ -13,23 +13,23 @@ const EVENT_DETAIL_TYPE = 'OrderPlaced';
 // ============================================================================
 
 const testOrder = {
-  customerId: "test-customer-123",
+  customerId: 'test-customer-123',
   items: [
     {
-      productId: "prod-001",
-      name: "Test Product",
+      productId: 'prod-001',
+      name: 'Test Product',
       quantity: 2,
-      price: 29.99
-    }
+      price: 29.99,
+    },
   ],
   totalAmount: 59.98,
   shippingAddress: {
-    street: "123 Test St",
-    city: "Test City",
-    state: "TS",
-    zipCode: "12345",
-    country: "US"
-  }
+    street: '123 Test St',
+    city: 'Test City',
+    state: 'TS',
+    zipCode: '12345',
+    country: 'US',
+  },
 };
 
 // ============================================================================
@@ -50,10 +50,10 @@ async function testEventBridgeCLI() {
     }]' --region eu-west-2`;
 
     console.log('🔧 Executing command:', command);
-    
-    const result = execSync(command, { 
+
+    const result = execSync(command, {
       encoding: 'utf8',
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     console.log('✅ EventBridge CLI response:');
@@ -63,12 +63,14 @@ async function testEventBridgeCLI() {
     const response = JSON.parse(result);
     if (response.FailedEntryCount === 0) {
       console.log('🎉 Event successfully sent to EventBridge!');
-      console.log('📋 Event IDs:', response.Entries?.map((entry: { EventId: string }) => entry.EventId).join(', '));
+      console.log(
+        '📋 Event IDs:',
+        response.Entries?.map((entry: { EventId: string }) => entry.EventId).join(', '),
+      );
     } else {
       console.error('❌ Failed to send event to EventBridge');
       console.error('📋 Failed entries:', response.Entries);
     }
-
   } catch (error) {
     console.error('❌ EventBridge CLI test failed:');
     if (error instanceof Error) {
@@ -86,4 +88,4 @@ async function testEventBridgeCLI() {
 // EXECUTION
 // ============================================================================
 
-testEventBridgeCLI(); 
+testEventBridgeCLI();

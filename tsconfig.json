@@ -24,11 +24,16 @@
     "noImplicitAny": true,                              /* Raise error on expressions and declarations with an implied 'any' type. */
     "noImplicitThis": true,                             /* Raise error on 'this' expressions with an implied 'any' type. */
     "alwaysStrict": true,                               /* Parse in strict mode and emit "use strict" for each source file. */
-    "noUnusedLocals": false,                            /* Report errors on unused local variables. */
-    "noUnusedParameters": false,                        /* Report errors on unused parameters. */
+    "noUnusedLocals": true,                            /* Report errors on unused local variables. */
+    "noUnusedParameters": true,                        /* Report errors on unused parameters. */
     "resolveJsonModule": true,                          /* Include modules imported with .json extension. */
     "isolatedModules": true,                            /* Ensure that each file can be safely transpiled independently. */
-    "lib": ["es2022"]                                   /* Specify library files to be included in the compilation. */
+    "lib": ["es2022"],                                   /* Specify library files to be included in the compilation. */
+    "baseUrl": ".",                                  /* Base directory for non-relative module names. */
+    "paths": {
+      "@services/*": ["services/*"],
+      "@scripts/*": ["scripts/*"]
+    }
   },
   "include": [
     "services/**/*",

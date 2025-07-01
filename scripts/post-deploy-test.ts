@@ -1,7 +1,7 @@
 console.log('=== POST DEPLOY TEST STARTED ===');
-import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
-import { EVENTBRIDGE_CONFIG } from "../services/shared/constants";
-import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
+import { EVENTBRIDGE_CONFIG } from '../services/shared/constants';
+import { CloudWatchLogsClient, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 
 // ============================================================================
 // CONFIGURATION
@@ -41,26 +41,26 @@ const client = new EventBridgeClient({ region });
 // ============================================================================
 
 const testEventDetail: TestEventDetail = {
-  customerId: "test",
-  items: [{ sku: "debug", quantity: 1 }],
-  _postDeployTest: true
+  customerId: 'test',
+  items: [{ sku: 'debug', quantity: 1 }],
+  _postDeployTest: true,
 };
 
 const event: EventBridgeEvent = {
   Source: EVENT_SOURCE,
   DetailType: EVENT_DETAIL_TYPE,
   EventBusName: EVENT_BUS_NAME,
-  Detail: JSON.stringify(testEventDetail)
+  Detail: JSON.stringify(testEventDetail),
 };
 
 // ============================================================================
 // LOG FETCHING UTILS
 // ============================================================================
 
-const LOG_GROUP_NAME = "/aws/lambda/dev-order-service-handler";
+const LOG_GROUP_NAME = '/aws/lambda/dev-order-service-handler';
 
 function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetchRecentLogs(eventBridgeEventId: string) {
@@ -95,7 +95,9 @@ async function fetchRecentLogs(eventBridgeEventId: string) {
       console.log(`\n✅ EventBridge EventId '${eventBridgeEventId}' found in logs. Test PASSED.`);
       process.exit(0);
     } else {
-      console.log(`\n❌ EventBridge EventId '${eventBridgeEventId}' NOT found in logs. Test FAILED.`);
+      console.log(
+        `\n❌ EventBridge EventId '${eventBridgeEventId}' NOT found in logs. Test FAILED.`,
+      );
       process.exit(1);
     }
   } catch (err) {
@@ -123,9 +125,8 @@ function isValidEventBridgeResponse(result: unknown): result is {
   Entries: Array<Record<string, unknown>>;
 } {
   if (!isRecord(result)) return false;
-  
-  return typeof result.FailedEntryCount === 'number' && 
-         Array.isArray(result.Entries);
+
+  return typeof result.FailedEntryCount === 'number' && Array.isArray(result.Entries);
 }
 
 // ============================================================================
@@ -142,21 +143,22 @@ async function runPostDeployTest(): Promise<string> {
     const result = await client.send(command);
 
     if (!isValidEventBridgeResponse(result)) {
-      console.error("Invalid EventBridge response:", result);
+      console.error('Invalid EventBridge response:', result);
       process.exit(1);
     }
 
     if (result.FailedEntryCount && result.FailedEntryCount > 0) {
-      console.error("Event submission failed:", result.Entries);
+      console.error('Event submission failed:', result.Entries);
       process.exit(1);
     }
 
-    const eventId = result.Entries && result.Entries[0] && typeof result.Entries[0].EventId === 'string'
-      ? result.Entries[0].EventId
-      : null;
-    console.log("EventBridge test event successfully sent:", result.Entries);
+    const eventId =
+      result.Entries && result.Entries[0] && typeof result.Entries[0].EventId === 'string'
+        ? result.Entries[0].EventId
+        : null;
+    console.log('EventBridge test event successfully sent:', result.Entries);
     if (!eventId) {
-      console.error("Could not retrieve EventId from EventBridge response.");
+      console.error('Could not retrieve EventId from EventBridge response.');
       process.exit(1);
     }
     return eventId;
@@ -172,7 +174,7 @@ async function runPostDeployTest(): Promise<string> {
 
 (async () => {
   const eventBridgeEventId = await runPostDeployTest();
-  console.log("Waiting 10 seconds for logs to appear...");
+  console.log('Waiting 10 seconds for logs to appear...');
   await sleep(10000);
   await fetchRecentLogs(eventBridgeEventId);
 })();

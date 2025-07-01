@@ -17,7 +17,8 @@
     "lint": "ts-node scripts/lint-test.ts",
     "lint:fix": "eslint services/**/*.ts scripts/**/*.ts --fix",
     "lint:all": "eslint services/**/*.ts scripts/**/*.ts",
-    "deploy:dev:ts": "ts-node scripts/deploy-dev.ts"
+    "deploy:dev:ts": "ts-node scripts/deploy-dev.ts",
+    "format": "prettier --write 'services/**/*.ts' 'scripts/**/*.ts'"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,7 @@
     "esbuild": "^0.25.5",
     "eslint": "^9.30.0",
     "globals": "^16.2.0",
+    "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.0"
@@ -43,8 +45,6 @@
     "@aws-sdk/client-cloudwatch-logs": "^3.839.0",
     "@aws-sdk/client-eventbridge": "^3.839.0",
     "@aws-sdk/client-sqs": "^3.839.0",
-    "@types/node-fetch": "^2.6.12",
-    "minimist": "^1.2.8",
-    "node-fetch": "^3.3.2"
+    "minimist": "^1.2.8"
   }
 }

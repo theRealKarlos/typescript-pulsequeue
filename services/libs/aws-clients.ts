@@ -1,5 +1,5 @@
-import { EventBridgeClient } from "@aws-sdk/client-eventbridge";
-import { SQSClient } from "@aws-sdk/client-sqs";
+import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
+import { SQSClient } from '@aws-sdk/client-sqs';
 // Add more clients here as needed (e.g., DynamoDB, SNS, etc.)
 
 // ============================================================================
@@ -15,7 +15,7 @@ const AWS_CONFIG = {
 // ============================================================================
 
 if (!AWS_CONFIG.region) {
-  throw new Error("AWS_REGION environment variable is required");
+  throw new Error('AWS_REGION environment variable is required');
 }
 
 // ============================================================================

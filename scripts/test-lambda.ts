@@ -14,7 +14,9 @@ const HANDLER_PATH = args.handler;
 const EVENT_FILE = args.event;
 
 if (!HANDLER_PATH || !EVENT_FILE) {
-  console.error('Usage: ts-node scripts/test-lambda.ts --handler <handler.ts> --event <event.json>');
+  console.error(
+    'Usage: ts-node scripts/test-lambda.ts --handler <handler.ts> --event <event.json>',
+  );
   process.exit(1);
 }
 
