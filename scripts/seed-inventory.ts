@@ -1,6 +1,6 @@
 import { PutItemCommand } from '@aws-sdk/client-dynamodb';
-import { createDynamoDBClient } from '@services/libs/aws-clients';
-import { INVENTORY_DYNAMODB_CONFIG } from '@services/shared/constants';
+import { createDynamoDBClient } from '../services/libs/aws-clients';
+import { INVENTORY_DYNAMODB_CONFIG } from '../services/shared/constants';
 import fs from 'fs';
 import path from 'path';
 
