@@ -1,6 +1,8 @@
 # TypeScript PulseQueue
 
-A concept serverless application built with TypeScript, AWS Lambda, and EventBridge to demonstrate event-driven architecture patterns in a simple, decoupled, and scalable way.
+A modern, type-safe, event-driven serverless application built with TypeScript, AWS Lambda, EventBridge, and DynamoDB. This project demonstrates best practices for scalable, decoupled architectures, robust testing, and infrastructure-as-code.
+
+---
 
 ## Table of Contents
 
@@ -8,69 +10,63 @@ A concept serverless application built with TypeScript, AWS Lambda, and EventBri
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
 - [Getting Started](#getting-started)
-- [Development](#development)
+- [Development & Testing](#development--testing)
 - [Deployment](#deployment)
 - [Project Structure](#project-structure)
-- [Event Reference](#event-reference)
+- [Event & Test File Reference](#event--test-file-reference)
+- [Best Practices](#best-practices)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
 
 ## Overview
 
-TypeScript PulseQueue is a **concept/prototype app** that demonstrates event-driven architecture using AWS services and TypeScript. It processes order events through a decoupled system with EventBridge routing and SQS dead letter queues for reliability. The goal is to showcase best practices for TypeScript, AWS Lambda, and infrastructure-as-code in a modern event-driven design.
+TypeScript PulseQueue is a concept/prototype app that demonstrates event-driven architecture using AWS services and TypeScript. It processes order events through a decoupled system with EventBridge routing and DynamoDB for inventory management. The goal is to showcase best practices for TypeScript, AWS Lambda, and infrastructure-as-code in a modern event-driven design.
 
 ### Key Features
 
-- ✅ **EventBridge-Driven Lambda** - Focused on event-driven flows
-- ✅ **Type Safety** - Full TypeScript implementation with strict checking
-- ✅ **Error Handling** - Comprehensive validation with dead letter queues
-- ✅ **Code Quality** - ESLint integration and automated checks
-- ✅ **Testing** - Jest-based local unit testing and integration testing
-- ✅ **Infrastructure as Code** - Terraform-managed AWS resources
+- **EventBridge-Driven Lambda**: End-to-end event-driven flows
+- **Type Safety**: Full TypeScript implementation, no `any`
+- **Robust Testing**: Jest-based unit tests, automated post-deploy integration tests
+- **Environment-Aware Infrastructure**: Modular, reusable, and isolated by environment
+- **Code Quality**: ESLint integration and automated checks
+- **Infrastructure as Code**: Terraform-managed AWS resources
+
+---
 
 ## Architecture
 
 ### Core Components
 
-1. **Lambda Function** (`order-service-handler`)
-   - Processes EventBridge events
-   - Contains order processing logic
-   - Runs on Node.js 22.x runtime
-
-2. **EventBridge Bus** (`dev-pulsequeue-bus`)
-   - Central event routing system
-   - Handles order events with dead letter queue
-
-3. **SQS Dead Letter Queue**
-   - Captures failed event processing
-   - Provides reliability and error handling
+- **Order Lambda**: Receives order events, reserves inventory, emits payment events
+- **Payment Lambda**: Processes payment events, updates inventory based on payment outcome
+- **EventBridge Buses**: Route events between services
+- **DynamoDB Table**: Stores inventory state
 
 ### Event Flow
 
 ```
-EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
+OrderPlaced (EventBridge) → Order Lambda → PaymentRequested (EventBridge) → Payment Lambda → DynamoDB
 ```
+
+- **Order Lambda** increments `reserved` in DynamoDB and emits a payment event
+- **Payment Lambda** decrements `reserved` and, on success, decrements `stock`
+
+---
 
 ## Technology Stack
 
-### Backend
+- **TypeScript** (strict, type-safe)
+- **AWS Lambda** (Node.js 22.x)
+- **AWS EventBridge** (event routing)
+- **AWS DynamoDB** (inventory state)
+- **Terraform** (infrastructure as code)
+- **Jest** (unit testing)
+- **ESLint** (code quality)
+- **ts-node** (script execution)
 
-- **TypeScript** - Type-safe development
-- **AWS Lambda** - Serverless compute
-- **AWS EventBridge** - Event routing
-- **AWS SQS** - Dead letter queue
-- **AWS SDK v3** - Modern AWS client libraries
-
-### Infrastructure
-
-- **Terraform** - Infrastructure as Code
-- **esbuild** - Fast TypeScript bundling
-- **ESLint** - Code quality enforcement
-- **Jest** - Unit testing
-
-### Development
-
-- **Node.js 22.x** - Current LTS runtime
-- **ts-node** - TypeScript execution
-- **Cross-env** - Environment variable management
+---
 
 ## Getting Started
 
@@ -85,64 +81,77 @@ EventBridge → Lambda → Order Processing Logic → (DLQ on failure)
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd TypeScript-PulseQueue
+ git clone <repository-url>
+ cd TypeScript-PulseQueue
 
 # Install dependencies
-npm install
+ npm install
 
 # Set up AWS credentials
-aws configure
+ aws configure
 ```
 
-## Development
+---
 
-### Available Scripts
+## Development & Testing
 
-```bash
-# Run Jest unit tests for all Lambdas
-npm test
+### Unit Testing (Jest)
 
-# Run Jest unit tests for the order service Lambda only
-npm run test:order-service
+- All Lambda handlers have dedicated Jest test files (e.g., `scripts/order-service-handler.test.ts`)
+- AWS SDK calls are mocked (no real AWS calls)
+- Event payloads are provided as JSON files (see below)
+- Run all unit tests:
+  ```bash
+  npm test
+  # or for a specific handler
+  npm run test:order-service
+  ```
+- **Unit test event file:** `scripts/order-service-event.local.json`
+  ```json
+  {
+    "orderId": "test-order-123",
+    "customerId": "test-customer-123",
+    "items": [{ "sku": "prod-001", "quantity": 2 }]
+  }
+  ```
 
-# Build any Lambda handler (parameterized)
-npm run build:lambda:dev -- --entry services/order-service/handler.ts --outdir dist/order-service --zip dist/order-service.zip
-npm run build:lambda:dev -- --entry services/other-service/handler.ts --outdir dist/other-service --zip dist/other-service.zip
+### Integration/Post-Deploy Testing
 
-# Run linting
-npm run lint
+- Automated end-to-end test script: `scripts/post-deploy-test.ts`
+- Uses `scripts/order-service-events.json` for test scenarios:
+  ```json
+  {
+    "success": {
+      "orderId": "test-success-123",
+      "customerId": "customer-1",
+      "items": [{ "sku": "prod-001", "quantity": 2 }]
+    },
+    "failure": {
+      "orderId": "test-failure-456",
+      "customerId": "customer-1",
+      "items": [{ "sku": "prod-001", "quantity": 2 }]
+    }
+  }
+  ```
+- The script:
+  - Resets inventory before each test
+  - Sends both success and failure events
+  - Waits for both Lambdas to process
+  - Checks logs for expected outcomes
+  - Asserts DynamoDB state is correct
+- Run manually:
+  ```bash
+  npx ts-node scripts/post-deploy-test.ts
+  ```
+- Or as part of the deployment pipeline (see below)
 
-# Fix linting issues
-npm run lint:fix
-
-# Lint all files (for CI or pre-push)
-npm run lint:all
-```
-
-### Local Unit Testing (Jest)
-
-Jest is used for all Lambda unit tests. Each handler has its own test file (e.g., `scripts/order-service-handler.test.ts`).
-
-```bash
-npm test
-# or for a specific handler
-npm run test:order-service
-```
-
-- All AWS SDK calls are mocked (no real AWS calls are made)
-- Event payloads are provided as JSON files or inline in the test
-- Tests are fast, isolated, and CI-friendly
-
-### Local Integration Testing
-
-You can still run integration tests (e.g., EventBridge, post-deploy) using the provided scripts.
+---
 
 ## Deployment
 
-### Recommended: TypeScript Deployment Pipeline
+### TypeScript Deployment Pipeline
 
-Run your full deployment pipeline using the TypeScript orchestration script:
+Run the full deployment pipeline:
 
 ```bash
 npm run deploy:dev:ts
@@ -152,17 +161,11 @@ This will:
 
 1. Run ESLint code quality checks
 2. Run all Jest unit tests
-3. Build the Lambda package
-4. Run Terraform plan
-5. Run Terraform apply
-6. Run the post-deploy integration test
+3. Build the Lambda package(s)
+4. Run Terraform plan & apply
+5. Run the post-deploy integration test
 
-**Benefits:**
-
-- Each step runs exactly once (no double execution)
-- Cross-platform (works on Windows, macOS, Linux)
-- Clear, color-coded output for each step
-- Easy to extend and maintain as your pipeline grows
+---
 
 ## Project Structure
 
@@ -171,99 +174,56 @@ TypeScript-PulseQueue/
 ├── services/
 │   ├── order-service/
 │   │   └── handler.ts          # Main Lambda handler
+│   ├── payment-service/
+│   │   └── handler.ts          # Payment Lambda handler
 │   ├── libs/
 │   │   └── aws-clients.ts      # AWS SDK v3 clients
 │   └── shared/
 │       └── constants.ts        # Shared configuration
 ├── scripts/
-│   ├── build-lambda.ts         # Parameterized Lambda build script
+│   ├── build-lambda.ts         # Lambda build script
 │   ├── order-service-handler.test.ts # Jest unit tests for order-service Lambda
-│   ├── order-service-event.local.json # Sample event for local unit test
-│   ├── order-service-event.postdeploy.json # Sample event for post-deploy test
-│   ├── post-deploy-test.ts     # Integration testing
-│   ├── deploy-dev.ts           # TypeScript deployment pipeline
-│   └── lint-test.ts            # Code quality checks
+│   ├── order-service-event.local.json # Event for local unit test
+│   ├── order-service-events.json      # Events for integration/post-deploy tests
+│   ├── post-deploy-test.ts     # End-to-end integration test
+│   ├── seed-inventory.ts       # Inventory seeding script
+│   └── ...                     # Other scripts
 ├── infra/
-│   ├── modules/
-│   │   ├── lambda/             # Lambda infrastructure
-│   │   └── eventbridge/        # EventBridge infrastructure
-│   └── envs/dev/               # Development environment
+│   ├── modules/                # Terraform modules
+│   └── envs/dev/               # Dev environment config
 ├── dist/                       # Build artifacts
 ├── package.json                # Dependencies and scripts
-├── tsconfig.json               # TypeScript configuration
-├── eslint.config.mjs           # ESLint configuration
+├── tsconfig.json               # TypeScript config
+├── eslint.config.mjs           # ESLint config
 └── README.md                   # This file
 ```
 
-## Lambda Unit Testing with Jest
+---
 
-- Each Lambda handler has a dedicated Jest test file
-- AWS SDK v3 clients are mocked using `aws-sdk-client-mock`
-- Event payloads are provided as JSON or inline
-- Tests are fast, reliable, and do not require AWS credentials
+## Event & Test File Reference
 
-## Event Reference
+### Unit Test Event File (`order-service-event.local.json`)
 
-### EventBridge Event Example
+- Used for local Jest unit tests
+- Must include `orderId`, `customerId`, and `items`
 
-```json
-{
-  "Source": "order.service",
-  "DetailType": "OrderPlaced",
-  "EventBusName": "dev-pulsequeue-bus",
-  "Detail": {
-    "orderId": "order-1751123046215",
-    "customerId": "karl-001",
-    "items": [{ "sku": "JERS-1023", "quantity": 2 }]
-  }
-}
-```
+### Integration/Post-Deploy Event File (`order-service-events.json`)
 
-### Lambda Response Format
+- Used for end-to-end and post-deploy tests
+- Must include both `success` and `failure` events, each with `orderId`, `customerId`, and `items`
 
-#### Success Response
+---
 
-```json
-{
-  "statusCode": 200,
-  "body": "{\"message\":\"Order created\",\"orderId\":\"order-1751123046215\"}"
-}
-```
+## Best Practices
 
-#### Error Response
+- **Type Safety**: All handlers and scripts are fully type-safe (no `any`)
+- **Centralized Configuration**: All config in `services/shared/constants.ts`
+- **Environment-Aware Resource Naming**: All AWS resources are named with environment prefixes (e.g., `dev-inventory-table`)
+- **Infrastructure as Code**: All AWS resources managed via Terraform modules
+- **Testing**: Robust unit and integration tests, with inventory reset and log assertions
+- **Code Quality**: ESLint enforced, no explicit `any` allowed
 
-```json
-{
-  "statusCode": 400,
-  "body": "{\"error\":\"Missing customerId or items in request body\"}"
-}
-```
-
-## Environment
-
-### Current Configuration
-
-- **Region**: eu-west-2 (London)
-- **Environment**: dev
-- **Runtime**: Node.js 22.x
-- **Memory**: Default Lambda allocation
-- **Timeout**: Default Lambda timeout
-
-### Environment Variables
-
-- `AWS_REGION` - AWS region (default: eu-west-2)
-- `AWS_ACCESS_KEY_ID` - AWS access key
-- `AWS_SECRET_ACCESS_KEY` - AWS secret key
-
-## Future Enhancements
-
-### Potential Additions
-
-- More Lambda handlers and event types
-- End-to-end integration tests
-- CI/CD pipeline integration
-- Monitoring and alerting
-- Advanced error handling and retries
+---
 
 ## Contributing
 
@@ -273,48 +233,8 @@ TypeScript-PulseQueue/
 4. Run tests and linting
 5. Submit a pull request
 
+---
+
 ## License
 
 This project is licensed under the ISC License.
-
-## Support
-
-For issues and questions:
-
-1. Check the existing issues
-2. Create a new issue with detailed information
-3. Include logs and error messages
-
----
-
-**Built as a concept with ❤️ using TypeScript and AWS Serverless**
-
-## Environment-Aware Resource Naming
-
-All AWS resources (EventBridge buses, rules, DynamoDB tables, etc.) are named using the pattern `${var.environment}-<base-name>`. This ensures clear separation and isolation between environments (e.g., dev, staging, prod) and makes the infrastructure modular and reusable.
-
-## Terraform Module Usage
-
-When using Terraform modules, only the base name of a resource (e.g., `order-bus`, `order-placed`, `inventory-table`) is passed from the environment configuration. The module itself prepends the environment name, so you do not need to hardcode environment prefixes in your environment configs. Example:
-
-```hcl
-module "order_eventbridge_bus" {
-  source      = "../../modules/eventbridge/bus"
-  environment = var.environment
-  bus_name    = "order-bus"
-}
-```
-
-## Running Scripts and Import Paths
-
-> **Note:** If you run scripts directly with `ts-node`, use relative imports for internal modules (e.g., `../services/shared/constants`). Path aliases (like `@services/...`) require extra setup (such as `tsconfig-paths`) and may not work out-of-the-box with direct script execution. For reliability, prefer relative imports in scripts.
-
-## Seeding the Inventory Table
-
-To seed the DynamoDB inventory table with initial data, run:
-
-```bash
-npx ts-node scripts/seed-inventory.ts
-```
-
-If you encounter module resolution errors, ensure your imports in the script are relative (not using path aliases).
