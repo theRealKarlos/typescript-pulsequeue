@@ -1,4 +1,6 @@
 console.log('=== POST DEPLOY TEST STARTED ===');
+import * as fs from 'fs';
+import * as path from 'path';
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { ORDER_EVENTBRIDGE_CONFIG } from '../services/shared/constants';
 import { CloudWatchLogsClient, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
@@ -40,11 +42,9 @@ const client = new EventBridgeClient({ region });
 // TEST DATA
 // ============================================================================
 
-const testEventDetail: TestEventDetail = {
-  customerId: 'test',
-  items: [{ sku: 'debug', quantity: 1 }],
-  _postDeployTest: true,
-};
+// Load test event from JSON file
+const eventJsonPath = path.resolve(__dirname, 'order-service-event.json');
+const testEventDetail: TestEventDetail = JSON.parse(fs.readFileSync(eventJsonPath, 'utf-8'));
 
 const event: EventBridgeEvent = {
   Source: EVENT_SOURCE,

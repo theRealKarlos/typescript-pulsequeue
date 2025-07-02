@@ -288,3 +288,33 @@ For issues and questions:
 ---
 
 **Built as a concept with ❤️ using TypeScript and AWS Serverless**
+
+## Environment-Aware Resource Naming
+
+All AWS resources (EventBridge buses, rules, DynamoDB tables, etc.) are named using the pattern `${var.environment}-<base-name>`. This ensures clear separation and isolation between environments (e.g., dev, staging, prod) and makes the infrastructure modular and reusable.
+
+## Terraform Module Usage
+
+When using Terraform modules, only the base name of a resource (e.g., `order-bus`, `order-placed`, `inventory-table`) is passed from the environment configuration. The module itself prepends the environment name, so you do not need to hardcode environment prefixes in your environment configs. Example:
+
+```hcl
+module "order_eventbridge_bus" {
+  source      = "../../modules/eventbridge/bus"
+  environment = var.environment
+  bus_name    = "order-bus"
+}
+```
+
+## Running Scripts and Import Paths
+
+> **Note:** If you run scripts directly with `ts-node`, use relative imports for internal modules (e.g., `../services/shared/constants`). Path aliases (like `@services/...`) require extra setup (such as `tsconfig-paths`) and may not work out-of-the-box with direct script execution. For reliability, prefer relative imports in scripts.
+
+## Seeding the Inventory Table
+
+To seed the DynamoDB inventory table with initial data, run:
+
+```bash
+npx ts-node scripts/seed-inventory.ts
+```
+
+If you encounter module resolution errors, ensure your imports in the script are relative (not using path aliases).
