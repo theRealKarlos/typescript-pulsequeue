@@ -1,0 +1,12 @@
+{
+  "success": {
+    "orderId": "test-success-123",
+    "customerId": "customer-1",
+    "items": [{ "sku": "prod-001", "quantity": 2 }]
+  },
+  "failure": {
+    "orderId": "test-failure-456",
+    "customerId": "customer-1",
+    "items": [{ "sku": "prod-001", "quantity": 2 }]
+  }
+} 

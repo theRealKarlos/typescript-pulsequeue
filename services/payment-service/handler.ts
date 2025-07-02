@@ -21,12 +21,18 @@ interface PaymentEvent {
   items: Array<{ sku: string; quantity: number }>;
 }
 
+// Type guard to check if an object has a 'detail' property
+function hasDetail(obj: unknown): obj is { detail: PaymentEvent & { _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE' } } {
+  return typeof obj === 'object' && obj !== null && 'detail' in obj && typeof (obj as { detail?: unknown }).detail === 'object';
+}
+
 export const handler = async (event: PaymentEvent & { _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE' }) => {
   console.log('Received payment event:', JSON.stringify(event));
 
   // EventBridge wraps the original event in a 'detail' property when invoking the Lambda.
   // Normalise to always use the payload, whether invoked directly or via EventBridge.
-  const payload: PaymentEvent & { _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE' } = (event as any).detail ?? event;
+  const payload: PaymentEvent & { _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE' } = hasDetail(event) ? event.detail : event;
+  console.log('DEBUG payment event payload:', JSON.stringify(payload));
   if (!Array.isArray(payload.items)) {
     throw new Error('Payment event missing items array');
   }
@@ -43,26 +49,26 @@ export const handler = async (event: PaymentEvent & { _postDeployTestForceResult
   console.log(`Payment outcome: ${paymentSuccess ? 'SUCCESS' : 'FAILURE'}`);
 
   for (const item of payload.items) {
-    // Always decrement reserved
+    // Always decrement reserved by the quantity
     const updateParams: UpdateItemCommandInput = {
       TableName: TABLE_NAME,
       Key: { item_id: { S: item.sku } },
-      UpdateExpression: 'ADD reserved :minusOne',
-      ExpressionAttributeValues: { ':minusOne': { N: '-1' } },
+      UpdateExpression: 'ADD reserved :minusQty',
+      ExpressionAttributeValues: { ':minusQty': { N: (-item.quantity).toString() } },
     };
     await client.send(new UpdateItemCommand(updateParams));
-    console.log(`Decremented reserved for item ${item.sku}`);
+    console.log(`Decremented reserved for item ${item.sku} by ${item.quantity}`);
 
     if (paymentSuccess) {
-      // On success, also decrement stock
+      // On success, also decrement stock by the quantity
       const updateStockParams: UpdateItemCommandInput = {
         TableName: TABLE_NAME,
         Key: { item_id: { S: item.sku } },
-        UpdateExpression: 'ADD stock :minusOne',
-        ExpressionAttributeValues: { ':minusOne': { N: '-1' } },
+        UpdateExpression: 'ADD stock :minusQty',
+        ExpressionAttributeValues: { ':minusQty': { N: (-item.quantity).toString() } },
       };
       await client.send(new UpdateItemCommand(updateStockParams));
-      console.log(`Decremented stock for item ${item.sku}`);
+      console.log(`Decremented stock for item ${item.sku} by ${item.quantity}`);
     }
   }
 

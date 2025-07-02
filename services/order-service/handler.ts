@@ -19,30 +19,33 @@ import { INVENTORY_DYNAMODB_CONFIG, PAYMENT_EVENTBRIDGE_CONFIG } from '@services
 interface OrderDetail {
   readonly customerId: string;
   readonly items: ReadonlyArray<{ readonly sku: string; readonly quantity: number }>;
+  readonly orderId: string;
 }
 
 // ============================================================================
 // VALIDATION FUNCTIONS
 // ============================================================================
 
+// Type guard for order items
+function isOrderItem(item: unknown): item is { sku: string; quantity: number } {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    typeof (item as { sku?: unknown }).sku === 'string' &&
+    typeof (item as { quantity?: unknown }).quantity === 'number'
+  );
+}
+
 /**
  * Type guard to check if a value is a valid order detail
  */
 function isValidOrderDetail(value: unknown): value is OrderDetail {
   if (typeof value !== 'object' || value === null) return false;
-
-  const order = value as Record<string, unknown>;
-  return (
-    typeof order.customerId === 'string' &&
-    Array.isArray(order.items) &&
-    order.items.every(
-      (item) =>
-        typeof item === 'object' &&
-        item !== null &&
-        typeof (item as Record<string, unknown>).sku === 'string' &&
-        typeof (item as Record<string, unknown>).quantity === 'number',
-    )
-  );
+  const order = value as { [key: string]: unknown };
+  if (typeof order.customerId !== 'string' || typeof order.orderId !== 'string' || !Array.isArray(order.items)) {
+    return false;
+  }
+  return order.items.every(isOrderItem);
 }
 
 // ============================================================================
@@ -80,7 +83,7 @@ export const handler = async (
         TableName: INVENTORY_DYNAMODB_CONFIG.TABLE_NAME,
         Key: { item_id: { S: item.sku } },
         UpdateExpression:
-          'SET stock = if_not_exists(stock, :zero) - :qty, reserved = if_not_exists(reserved, :zero) + :qty',
+          'SET reserved = if_not_exists(reserved, :zero) + :qty',
         ConditionExpression: 'stock >= :qty OR attribute_not_exists(stock)',
         ExpressionAttributeValues: {
           ':qty': { N: item.quantity.toString() },
@@ -90,7 +93,7 @@ export const handler = async (
       });
       try {
         const result = await dynamoDB.send(updateCmd);
-        console.log(`✅ Reserved stock for SKU ${item.sku}:`, result.Attributes);
+        console.log(`✅ Reserved stock for SKU ${item.sku} (orderId: ${orderDetail.orderId}):`, result.Attributes);
       } catch (err) {
         console.error(`❌ Failed to reserve stock for SKU ${item.sku}:`, err);
         return {
@@ -106,10 +109,7 @@ export const handler = async (
       DetailType: PAYMENT_EVENTBRIDGE_CONFIG.DETAIL_TYPE,
       EventBusName: PAYMENT_EVENTBRIDGE_CONFIG.BUS_NAME,
       Detail: JSON.stringify({
-        orderId:
-          typeof orderDetail === 'object' && orderDetail !== null && 'orderId' in orderDetail && typeof (orderDetail as Record<string, unknown>).orderId === 'string'
-            ? (orderDetail as Record<string, unknown>).orderId
-            : 'unknown',
+        orderId: orderDetail.orderId,
         customerId: orderDetail.customerId,
         items: orderDetail.items,
         timestamp: new Date().toISOString(),
@@ -124,10 +124,7 @@ export const handler = async (
       statusCode: 200,
       body: JSON.stringify({
         message: 'Order processed, stock reserved, payment event emitted',
-        orderId:
-          typeof orderDetail === 'object' && orderDetail !== null && 'orderId' in orderDetail && typeof (orderDetail as Record<string, unknown>).orderId === 'string'
-            ? (orderDetail as Record<string, unknown>).orderId
-            : 'unknown',
+        orderId: orderDetail.orderId,
         timestamp: new Date().toISOString(),
       }),
     };

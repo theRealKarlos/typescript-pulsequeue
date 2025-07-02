@@ -5,6 +5,7 @@ import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge
 import { CloudWatchLogsClient, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { ORDER_EVENTBRIDGE_CONFIG } from '../services/shared/constants';
+import { execSync } from 'child_process';
 
 // ============================================================================
 // CONFIGURATION
@@ -19,10 +20,10 @@ const PAYMENT_EVENT_LOG_GROUP = ORDER_EVENTBRIDGE_CONFIG.PAYMENT_LAMBDA_LOG_GROU
 const INVENTORY_TABLE_NAME = ORDER_EVENTBRIDGE_CONFIG.INVENTORY_TABLE_NAME;
 const region = process.env.AWS_REGION || DEFAULT_REGION;
 
-const eventJsonPath = path.resolve(__dirname, 'order-service-event.json');
-const baseTestEventDetail = JSON.parse(fs.readFileSync(eventJsonPath, 'utf-8'));
+const eventsJsonPath = path.resolve(__dirname, 'order-service-events.json');
+const allTestEvents = JSON.parse(fs.readFileSync(eventsJsonPath, 'utf-8'));
 
-const testSku = baseTestEventDetail.items[0].sku;
+const testSku = allTestEvents.success.items[0].sku;
 
 const eventBridgeClient = new EventBridgeClient({ region });
 const logsClient = new CloudWatchLogsClient({ region });
@@ -36,9 +37,17 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function getTestEvent(forceResult: 'SUCCESS' | 'FAILURE') {
+  // Clone the event to avoid mutation
+  const base = JSON.parse(JSON.stringify(forceResult === 'SUCCESS' ? allTestEvents.success : allTestEvents.failure));
+  // Set a unique orderId for each test run
+  base.orderId = `${base.orderId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  return base;
+}
+
 async function sendOrderEvent(forceResult: 'SUCCESS' | 'FAILURE') {
   const testEventDetail = {
-    ...baseTestEventDetail,
+    ...getTestEvent(forceResult),
     _postDeployTest: true,
     _postDeployTestForceResult: forceResult,
   };
@@ -55,7 +64,7 @@ async function sendOrderEvent(forceResult: 'SUCCESS' | 'FAILURE') {
       ? result.Entries[0].EventId
       : null;
   if (!eventId) throw new Error('Could not retrieve EventId from EventBridge response.');
-  return eventId;
+  return { eventId, testEventDetail };
 }
 
 async function fetchLogs(logGroupName: string, searchString: string, retries = 5, delayMs = 5000) {
@@ -105,11 +114,52 @@ async function fetchInventoryItem(sku: string) {
   };
 }
 
-async function runEndToEndTest(forceResult: 'SUCCESS' | 'FAILURE') {
+async function resetInventory() {
+  // Run the inventory seed script to reset stock and reserved
+  const seedScriptPath = path.resolve(__dirname, 'seed-inventory.ts');
+  try {
+    execSync(`npx ts-node "${seedScriptPath}"`, { stdio: 'inherit' });
+    console.log('Inventory reset to known state.');
+  } catch (err) {
+    throw new Error('Failed to reset inventory: ' + (err instanceof Error ? err.message : String(err)));
+  }
+}
+
+async function assertOrderLambdaReservedLog(orderId: string, expectedReserved: number) {
+  const now = Date.now();
+  const startTime = now - 60 * 1000; // 1 minute ago
+  const command = new FilterLogEventsCommand({
+    logGroupName: ORDER_EVENT_LOG_GROUP,
+    startTime,
+    endTime: now,
+    limit: 50,
+  });
+  const response = await logsClient.send(command);
+  const found = response.events?.some(
+    (event) =>
+      event.message &&
+      event.message.includes(orderId) &&
+      event.message.includes(`reserved: { N: '${expectedReserved}' }`)
+  );
+  if (!found) {
+    throw new Error(
+      `Order Lambda log for orderId=${orderId} with reserved=${expectedReserved} not found in the last minute`
+    );
+  }
+}
+
+async function runEndToEndTest(forceResult: 'SUCCESS' | 'FAILURE', initialStock: number, initialReserved: number) {
+  await resetInventory();
+  const before = await fetchInventoryItem(testSku);
+  console.log('Inventory item before test:', before);
+  if (before.stock !== initialStock || before.reserved !== initialReserved) {
+    throw new Error(`Inventory not at expected initial state. Got stock=${before.stock}, reserved=${before.reserved}`);
+  }
   console.log(`\n=== Running end-to-end test with payment result: ${forceResult} ===`);
-  const eventId = await sendOrderEvent(forceResult);
-  console.log('Waiting 15 seconds for both Lambdas to process...');
-  await sleep(15000);
+  const { eventId, testEventDetail } = await sendOrderEvent(forceResult);
+
+  console.log('Waiting 12 seconds for payment Lambda to process...');
+  await sleep(12000);
 
   // Check order service logs for event ID
   const orderLogFound = await fetchLogs(ORDER_EVENT_LOG_GROUP, eventId);
@@ -125,27 +175,32 @@ async function runEndToEndTest(forceResult: 'SUCCESS' | 'FAILURE') {
   }
   console.log('Payment service log found.');
 
-  // Check DynamoDB state
+  // Check DynamoDB state after payment Lambda
   const item = await fetchInventoryItem(testSku);
   if (!item) throw new Error('Inventory item not found!');
   console.log('Inventory item after test:', item);
 
-  // Assert on stock and reserved
+  // Assert on stock and reserved after payment Lambda
   if (forceResult === 'SUCCESS') {
     console.log('Asserting inventory for payment SUCCESS...');
-    // reserved should be decremented, stock should be decremented
-    // (You may want to store initial values and compare, or just log for now)
+    if (item.stock !== initialStock - testEventDetail.items[0].quantity || item.reserved !== initialReserved) {
+      throw new Error(`Expected stock=${initialStock - testEventDetail.items[0].quantity}, reserved=${initialReserved} but got stock=${item.stock}, reserved=${item.reserved}`);
+    }
   } else {
     console.log('Asserting inventory for payment FAILURE...');
-    // reserved should be decremented, stock should be unchanged
+    if (item.stock !== initialStock || item.reserved !== initialReserved) {
+      throw new Error(`Expected stock=${initialStock}, reserved=${initialReserved} but got stock=${item.stock}, reserved=${item.reserved}`);
+    }
   }
+  // Assert order Lambda log for reserved state
+  await assertOrderLambdaReservedLog(testEventDetail.orderId, testEventDetail.items[0].quantity);
   console.log('End-to-end test for', forceResult, 'completed successfully!');
 }
 
 (async () => {
   try {
-    await runEndToEndTest('SUCCESS');
-    await runEndToEndTest('FAILURE');
+    await runEndToEndTest('SUCCESS', 100, 0);
+    await runEndToEndTest('FAILURE', 100, 0);
     console.log('\n✅ All end-to-end post-deploy tests completed successfully!');
   } catch (err) {
     console.error('❌ End-to-end post-deploy test failed:', err);
