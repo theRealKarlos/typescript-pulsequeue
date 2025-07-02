@@ -27,9 +27,9 @@ module "payment_eventbridge_bus" {
 # ============================================================================
 
 module "order_service" {
-  source              = "../../modules/lambda/order-service"
+  source              = "../../modules/lambda/lambda-function"
   lambda_zip_path     = abspath("${path.module}/../../../dist/order-service.zip")
-  function_name       = "${var.environment}-order-service-handler"
+  function_basename   = "order-service-handler"
   environment         = var.environment
   inventory_table_arn = module.inventory_table.table_arn
 }

@@ -3,7 +3,7 @@
 # ============================================================================
 
 resource "aws_lambda_function" "order_handler" {
-  function_name = "${var.environment}-order-service-handler"
+  function_name = "${var.environment}-${var.function_basename}"
   handler       = "handler.handler"
   runtime       = "nodejs22.x"
   filename      = var.lambda_zip_path

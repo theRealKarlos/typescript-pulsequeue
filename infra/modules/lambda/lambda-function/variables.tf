@@ -5,9 +5,9 @@ variable "lambda_zip_path" {
   description = "Path to the compiled Lambda ZIP file"
 }
 
-variable "function_name" {
+variable "function_basename" {
   type        = string
-  description = "Name of the Lambda function"
+  description = "Base name for the Lambda function (without environment prefix)"
 }
 
 variable "environment" {
