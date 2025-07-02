@@ -32,6 +32,8 @@ module "order_service" {
   function_basename   = "order-service-handler"
   environment         = var.environment
   inventory_table_arn = module.inventory_table.table_arn
+  runtime             = var.lambda_runtime
+  handler             = var.lambda_handler
 }
 
 # ============================================================================
@@ -39,13 +41,13 @@ module "order_service" {
 # ============================================================================
 
 module "eventbridge_order_placed" {
-  source      = "../../modules/eventbridge/rule"
-  environment = var.environment
-  bus_name    = module.order_eventbridge_bus.bus_name
-  lambda_arn  = module.order_service.lambda_arn
-  region      = var.region
-  rule_name   = "order-placed"
-  target_id   = "handler"
+  source           = "../../modules/eventbridge/rule"
+  environment      = var.environment
+  bus_name         = module.order_eventbridge_bus.bus_name
+  lambda_arn       = module.order_service.lambda_arn
+  region           = var.region
+  rule_name        = "order-placed"
+  target_id_suffix = "handler"
 }
 
 # ============================================================================

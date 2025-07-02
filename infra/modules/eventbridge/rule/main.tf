@@ -24,7 +24,7 @@ resource "aws_cloudwatch_event_rule" "order_placed" {
 resource "aws_cloudwatch_event_target" "order_handler" {
   rule           = aws_cloudwatch_event_rule.order_placed.name
   event_bus_name = var.bus_name
-  target_id      = "${var.environment}-${var.rule_name}-${var.target_id}"
+  target_id      = "${var.environment}-${var.rule_name}-${var.target_id_suffix}"
   arn            = var.lambda_arn
 
   dead_letter_config {

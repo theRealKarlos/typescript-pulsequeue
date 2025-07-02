@@ -4,8 +4,8 @@
 
 resource "aws_lambda_function" "order_handler" {
   function_name = "${var.environment}-${var.function_basename}"
-  handler       = "handler.handler"
-  runtime       = "nodejs22.x"
+  handler       = var.handler
+  runtime       = var.runtime
   filename      = var.lambda_zip_path
   role          = aws_iam_role.lambda_exec.arn
 

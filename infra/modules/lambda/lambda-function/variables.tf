@@ -19,3 +19,13 @@ variable "inventory_table_arn" {
   description = "ARN of the DynamoDB inventory table"
   type        = string
 }
+
+variable "runtime" {
+  description = "The Lambda runtime"
+  type        = string
+}
+
+variable "handler" {
+  description = "The Lambda handler"
+  type        = string
+}

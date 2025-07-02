@@ -23,8 +23,8 @@ variable "rule_name" {
   description = "The base name for the EventBridge rule."
 }
 
-variable "target_id" {
+variable "target_id_suffix" {
   type        = string
-  description = "The target ID for the EventBridge rule."
+  description = "Suffix or label for the EventBridge target_id to ensure uniqueness and clarity."
   default     = "handler"
 }

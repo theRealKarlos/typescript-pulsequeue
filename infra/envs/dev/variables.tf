@@ -9,3 +9,15 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "lambda_runtime" {
+  description = "The runtime for all Lambda functions"
+  type        = string
+  default     = "nodejs22.x"
+}
+
+variable "lambda_handler" {
+  description = "The handler for all Lambda functions"
+  type        = string
+  default     = "handler.handler"
+}
