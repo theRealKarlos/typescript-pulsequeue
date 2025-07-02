@@ -15,7 +15,6 @@ A modern, type-safe, event-driven serverless application built with TypeScript, 
 - [Project Structure](#project-structure)
 - [Event & Test File Reference](#event--test-file-reference)
 - [Best Practices](#best-practices)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -171,31 +170,76 @@ This will:
 
 ```
 TypeScript-PulseQueue/
-├── services/
-│   ├── order-service/
-│   │   └── handler.ts          # Main Lambda handler
-│   ├── payment-service/
-│   │   └── handler.ts          # Payment Lambda handler
-│   ├── libs/
-│   │   └── aws-clients.ts      # AWS SDK v3 clients
-│   └── shared/
-│       └── constants.ts        # Shared configuration
-├── scripts/
-│   ├── build-lambda.ts         # Lambda build script
-│   ├── order-service-handler.test.ts # Jest unit tests for order-service Lambda
-│   ├── order-service-event.local.json # Event for local unit test
-│   ├── order-service-events.json      # Events for integration/post-deploy tests
-│   ├── post-deploy-test.ts     # End-to-end integration test
-│   ├── seed-inventory.ts       # Inventory seeding script
-│   └── ...                     # Other scripts
+├── dist/
 ├── infra/
-│   ├── modules/                # Terraform modules
-│   └── envs/dev/               # Dev environment config
-├── dist/                       # Build artifacts
-├── package.json                # Dependencies and scripts
-├── tsconfig.json               # TypeScript config
-├── eslint.config.mjs           # ESLint config
-└── README.md                   # This file
+│   ├── bootstrap/
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── terraform.tfstate
+│   │   ├── terraform.tfstate.backup
+│   │   ├── tfplan
+│   │   └── .terraform.lock.hcl
+│   ├── envs/
+│   │   └── dev/
+│   │       ├── backend.tf
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       ├── tfplan
+│   │       └── .terraform.lock.hcl
+│   └── modules/
+│       ├── dynamodb/
+│       │   └── table/
+│       │       ├── main.tf
+│       │       ├── outputs.tf
+│       │       └── variables.tf
+│       ├── eventbridge/
+│       │   ├── bus/
+│       │   │   ├── main.tf
+│       │   │   ├── outputs.tf
+│       │   │   └── variables.tf
+│       │   └── rule/
+│       │       ├── main.tf
+│       │       ├── outputs.tf
+│       │       └── variables.tf
+│       └── lambda/
+│           └── lambda-function/
+│               ├── iam.tf
+│               ├── main.tf
+│               ├── outputs.tf
+│               └── variables.tf
+├── node_modules/
+├── scripts/
+│   ├── build-lambda.ts
+│   ├── deploy-dev.ts
+│   ├── inventory-seed.json
+│   ├── lambdas.config.ts
+│   ├── lint-test.ts
+│   ├── order-service-event.json
+│   ├── order-service-event.local.json
+│   ├── order-service-events.json
+│   ├── order-service-handler.test.ts
+│   ├── payment-service-handler.test.ts
+│   ├── post-deploy-test.ts
+│   ├── seed-inventory.ts
+│   ├── test-eventbridge-cli.ts
+├── services/
+│   ├── libs/
+│   │   └── aws-clients.ts
+│   ├── order-service/
+│   │   └── handler.ts
+│   ├── payment-service/
+│   │   └── handler.ts
+│   └── shared/
+│       └── constants.ts
+├── .gitignore
+├── eslint.config.mjs
+├── jest.config.js
+├── package-lock.json
+├── package.json
+├── pulsequeue-notes.txt
+├── README.md
+├── response.json
+├── tsconfig.json
 ```
 
 ---
@@ -222,16 +266,6 @@ TypeScript-PulseQueue/
 - **Infrastructure as Code**: All AWS resources managed via Terraform modules
 - **Testing**: Robust unit and integration tests, with inventory reset and log assertions
 - **Code Quality**: ESLint enforced, no explicit `any` allowed
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
 
 ---
 
