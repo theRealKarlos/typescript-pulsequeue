@@ -24,18 +24,25 @@ interface PaymentEvent {
 export const handler = async (event: PaymentEvent & { _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE' }) => {
   console.log('Received payment event:', JSON.stringify(event));
 
+  // EventBridge wraps the original event in a 'detail' property when invoking the Lambda.
+  // Normalise to always use the payload, whether invoked directly or via EventBridge.
+  const payload: PaymentEvent & { _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE' } = (event as any).detail ?? event;
+  if (!Array.isArray(payload.items)) {
+    throw new Error('Payment event missing items array');
+  }
+
   // Support forced payment result for post-deploy tests
   let paymentSuccess: boolean;
-  if (event._postDeployTestForceResult === 'SUCCESS') {
+  if (payload._postDeployTestForceResult === 'SUCCESS') {
     paymentSuccess = true;
-  } else if (event._postDeployTestForceResult === 'FAILURE') {
+  } else if (payload._postDeployTestForceResult === 'FAILURE') {
     paymentSuccess = false;
   } else {
     paymentSuccess = Math.random() < 0.5;
   }
   console.log(`Payment outcome: ${paymentSuccess ? 'SUCCESS' : 'FAILURE'}`);
 
-  for (const item of event.items) {
+  for (const item of payload.items) {
     // Always decrement reserved
     const updateParams: UpdateItemCommandInput = {
       TableName: TABLE_NAME,
@@ -60,7 +67,7 @@ export const handler = async (event: PaymentEvent & { _postDeployTestForceResult
   }
 
   return {
-    orderId: event.orderId,
+    orderId: payload.orderId,
     paymentId: randomUUID(),
     status: paymentSuccess ? 'SUCCESS' : 'FAILURE',
   };
