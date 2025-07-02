@@ -17,3 +17,14 @@ variable "region" {
   description = "AWS region to deploy resources to"
   type        = string
 }
+
+variable "rule_name" {
+  type        = string
+  description = "The base name for the EventBridge rule."
+}
+
+variable "target_id" {
+  type        = string
+  description = "The target ID for the EventBridge rule."
+  default     = "handler"
+}

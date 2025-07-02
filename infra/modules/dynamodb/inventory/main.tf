@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "inventory" {
-  name         = var.table_name
+  name         = "${var.environment}-${var.table_name}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "item_id"
 
@@ -7,4 +7,4 @@ resource "aws_dynamodb_table" "inventory" {
     name = "item_id"
     type = "S"
   }
-} 
+}

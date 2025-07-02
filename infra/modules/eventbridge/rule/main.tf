@@ -9,7 +9,7 @@ data "aws_caller_identity" "current" {}
 # ============================================================================
 
 resource "aws_cloudwatch_event_rule" "order_placed" {
-  name           = "${var.environment}-order-placed"
+  name           = "${var.environment}-${var.rule_name}"
   event_bus_name = var.bus_name
   event_pattern = jsonencode({
     source        = ["order.service"],
@@ -24,7 +24,7 @@ resource "aws_cloudwatch_event_rule" "order_placed" {
 resource "aws_cloudwatch_event_target" "order_handler" {
   rule           = aws_cloudwatch_event_rule.order_placed.name
   event_bus_name = var.bus_name
-  target_id      = "order-handler"
+  target_id      = "${var.environment}-${var.rule_name}-${var.target_id}"
   arn            = var.lambda_arn
 
   dead_letter_config {
@@ -57,7 +57,7 @@ resource "aws_lambda_permission" "allow_eventbridge_rule" {
 # ============================================================================
 
 resource "aws_sqs_queue" "eventbridge_dlq" {
-  name = "${var.environment}-order-service-eventbridge-dlq"
+  name = "${var.environment}-${var.rule_name}-eventbridge-dlq"
 
   visibility_timeout_seconds = 30
   message_retention_seconds  = 1209600

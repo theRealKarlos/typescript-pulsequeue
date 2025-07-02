@@ -3,5 +3,5 @@
 # ============================================================================
 
 resource "aws_cloudwatch_event_bus" "custom" {
-  name = var.bus_name
+  name = "${var.environment}-${var.bus_name}"
 }

@@ -13,13 +13,13 @@ provider "aws" {
 module "order_eventbridge_bus" {
   source      = "../../modules/eventbridge/bus"
   environment = var.environment
-  bus_name    = "${var.environment}-order-bus"
+  bus_name    = "order-bus"
 }
 
 module "payment_eventbridge_bus" {
   source      = "../../modules/eventbridge/bus"
   environment = var.environment
-  bus_name    = "${var.environment}-payment-bus"
+  bus_name    = "payment-bus"
 }
 
 # ============================================================================
@@ -44,6 +44,8 @@ module "eventbridge_order_placed" {
   bus_name    = module.order_eventbridge_bus.bus_name
   lambda_arn  = module.order_service.lambda_arn
   region      = var.region
+  rule_name   = "order-placed"
+  target_id   = "handler"
 }
 
 # ============================================================================
@@ -51,8 +53,9 @@ module "eventbridge_order_placed" {
 # ============================================================================
 
 module "inventory_table" {
-  source     = "../../modules/dynamodb/inventory"
-  table_name = "dev-inventory-table"
+  source      = "../../modules/dynamodb/inventory"
+  environment = var.environment
+  table_name  = "inventory-table"
 }
 
 # ============================================================================
