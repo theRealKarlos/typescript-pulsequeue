@@ -10,9 +10,22 @@ import minimist from 'minimist';
 
 const args = minimist(process.argv.slice(2));
 
-const ENTRY_POINT = args.entry || 'services/order-service/handler.ts';
-const OUTPUT_DIR = args.outdir || 'dist/order-service';
-const ZIP_FILE = args.zip || 'dist/order-service.zip';
+if (!args.entry || typeof args.entry !== 'string') {
+  console.error('Missing required argument: --entry <entry file path>');
+  process.exit(1);
+}
+if (!args.outdir || typeof args.outdir !== 'string') {
+  console.error('Missing required argument: --outdir <output directory>');
+  process.exit(1);
+}
+if (!args.zip || typeof args.zip !== 'string') {
+  console.error('Missing required argument: --zip <zip file path>');
+  process.exit(1);
+}
+
+const ENTRY_POINT: string = args.entry;
+const OUTPUT_DIR: string = args.outdir;
+const ZIP_FILE: string = args.zip;
 const TARGET_NODE_VERSION = 'node22';
 const PLATFORM = 'node';
 
@@ -82,7 +95,7 @@ function ensureDirectoryExists(dir: string): void {
  */
 function createZip(): void {
   const powershellZipCmd = `powershell.exe -NoProfile -Command "Compress-Archive -Path '${outDir}\\*' -DestinationPath '${zipPath}' -Force"`;
-  console.log('Zipping...');
+  console.log(`Zipping to ${zipPath}...`);
   execSync(powershellZipCmd, { stdio: 'inherit' });
 }
 
@@ -115,7 +128,7 @@ async function runBuild(): Promise<void> {
 
     // Step 5: Create zip
     createZip();
-    console.log('Build + zip ready at dist/order-service.zip');
+    console.log(`Build + zip ready at ${zipPath}`);
   } catch (error) {
     console.error('Build failed:', error);
     process.exit(1);
