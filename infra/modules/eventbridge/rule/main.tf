@@ -12,8 +12,8 @@ resource "aws_cloudwatch_event_rule" "order_placed" {
   name           = "${var.environment}-${var.rule_name}"
   event_bus_name = var.bus_name
   event_pattern = jsonencode({
-    source        = ["order.service"],
-    "detail-type" = ["OrderPlaced"]
+    source        = [var.event_source],
+    "detail-type" = [var.event_detail_type]
   })
 }
 

@@ -31,9 +31,25 @@ module "order_service" {
   lambda_zip_path     = abspath("${path.module}/../../../dist/order-service.zip")
   function_basename   = "order-service-handler"
   environment         = var.environment
-  inventory_table_arn = module.inventory_table.table_arn
   runtime             = var.lambda_runtime
   handler             = var.lambda_handler
+  inventory_table_arn = module.inventory_table.table_arn
+  environment_variables = {
+    INVENTORY_TABLE_NAME = module.inventory_table.table_name
+  }
+}
+
+module "payment_service" {
+  source              = "../../modules/lambda/lambda-function"
+  lambda_zip_path     = abspath("${path.module}/../../../dist/payment-service.zip")
+  function_basename   = "payment-service-handler"
+  environment         = var.environment
+  runtime             = var.lambda_runtime
+  handler             = var.lambda_handler
+  inventory_table_arn = module.inventory_table.table_arn
+  environment_variables = {
+    INVENTORY_TABLE_NAME = module.inventory_table.table_name
+  }
 }
 
 # ============================================================================
@@ -41,13 +57,27 @@ module "order_service" {
 # ============================================================================
 
 module "eventbridge_order_placed" {
-  source           = "../../modules/eventbridge/rule"
-  environment      = var.environment
-  bus_name         = module.order_eventbridge_bus.bus_name
-  lambda_arn       = module.order_service.lambda_arn
-  region           = var.region
-  rule_name        = "order-placed"
-  target_id_suffix = "handler"
+  source            = "../../modules/eventbridge/rule"
+  environment       = var.environment
+  bus_name          = module.order_eventbridge_bus.bus_name
+  lambda_arn        = module.order_service.lambda_arn
+  region            = var.region
+  rule_name         = "order-placed"
+  target_id_suffix  = "handler"
+  event_source      = "order.service"
+  event_detail_type = "OrderPlaced"
+}
+
+module "eventbridge_payment_processed" {
+  source            = "../../modules/eventbridge/rule"
+  environment       = var.environment
+  bus_name          = module.payment_eventbridge_bus.bus_name
+  lambda_arn        = module.payment_service.lambda_arn
+  region            = var.region
+  rule_name         = "payment-processed"
+  target_id_suffix  = "handler"
+  event_source      = "payment.service"
+  event_detail_type = "PaymentRequested"
 }
 
 # ============================================================================

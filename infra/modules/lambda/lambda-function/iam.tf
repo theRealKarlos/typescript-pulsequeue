@@ -3,7 +3,7 @@
 # ============================================================================
 
 resource "aws_iam_role" "lambda_exec" {
-  name = "order-service-exec-role"
+  name = "${var.environment}-${var.function_basename}-exec-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -25,7 +25,7 @@ resource "aws_iam_role" "lambda_exec" {
 # ============================================================================
 
 resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
-  name = "allow-put-events"
+  name = "${var.environment}-${var.function_basename}-allow-put-events"
   role = aws_iam_role.lambda_exec.id
 
   policy = jsonencode({
@@ -45,7 +45,7 @@ resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
 # ============================================================================
 
 resource "aws_iam_role_policy" "lambda_logging" {
-  name = "lambda-basic-logging"
+  name = "${var.environment}-${var.function_basename}-basic-logging"
   role = aws_iam_role.lambda_exec.id
 
   policy = jsonencode({
@@ -65,7 +65,7 @@ resource "aws_iam_role_policy" "lambda_logging" {
 }
 
 resource "aws_iam_role_policy" "lambda_inventory_dynamodb_policy" {
-  name = "allow-inventory-dynamodb-access"
+  name = "${var.environment}-${var.function_basename}-allow-inventory-dynamodb-access"
   role = aws_iam_role.lambda_exec.id
 
   policy = jsonencode({

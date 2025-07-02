@@ -28,3 +28,13 @@ variable "target_id_suffix" {
   description = "Suffix or label for the EventBridge target_id to ensure uniqueness and clarity."
   default     = "handler"
 }
+
+variable "event_source" {
+  type        = string
+  description = "The source field to match in the EventBridge rule event pattern."
+}
+
+variable "event_detail_type" {
+  type        = string
+  description = "The detail-type field to match in the EventBridge rule event pattern."
+}

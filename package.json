@@ -15,6 +15,7 @@
     "format": "prettier --write services/**/*.ts scripts/**/*.ts",
     "test": "jest",
     "test:order-service": "jest scripts/order-service-handler.test.ts",
+    "test:payment-service": "jest scripts/payment-service-handler.test.ts",
     "plan:dev": "cd infra/envs/dev && terraform plan -out=tfplan",
     "apply:dev": "cd infra/envs/dev && terraform apply tfplan",
     "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts"

@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { lambdas } from './lambdas.config';
 
 function runStep(command: string, args: string[], stepName: string) {
   console.log(`\n=== Running: ${stepName} ===`);
@@ -23,22 +24,24 @@ runStep(
   'Jest Unit Tests',
 );
 
-// 3. Build Lambda
-runStep(
-  'npm',
-  [
-    'run',
-    'build:lambda:dev',
-    '--',
-    '--entry',
-    'services/order-service/handler.ts',
-    '--outdir',
-    'dist/order-service',
-    '--zip',
-    'dist/order-service.zip',
-  ],
-  'Build Lambda',
-);
+// 3. Build all Lambdas
+for (const lambda of lambdas) {
+  runStep(
+    'npm',
+    [
+      'run',
+      'build:lambda:dev',
+      '--',
+      '--entry',
+      lambda.entry,
+      '--outdir',
+      lambda.outdir,
+      '--zip',
+      lambda.zip,
+    ],
+    `Build ${lambda.name}`,
+  );
+}
 
 // 4. Terraform plan
 runStep('npm', ['run', 'plan:dev'], 'Terraform Plan');
