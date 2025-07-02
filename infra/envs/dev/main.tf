@@ -55,9 +55,13 @@ module "eventbridge_order_placed" {
 # ============================================================================
 
 module "inventory_table" {
-  source      = "../../modules/dynamodb/inventory"
-  environment = var.environment
-  table_name  = "inventory-table"
+  source         = "../../modules/dynamodb/table"
+  environment    = var.environment
+  table_basename = "inventory"
+  hash_key       = "item_id"
+  attributes = [
+    { name = "item_id", type = "S" }
+  ]
 }
 
 # ============================================================================
