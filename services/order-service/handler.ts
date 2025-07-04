@@ -10,7 +10,7 @@
 import { UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { createDynamoDBClient, createEventBridgeClient } from '@services/libs/aws-clients';
-import { INVENTORY_DYNAMODB_CONFIG, PAYMENT_EVENTBRIDGE_CONFIG } from '@services/shared/constants';
+import { PAYMENT_EVENTBRIDGE_CONFIG } from '@services/shared/constants';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -20,6 +20,15 @@ interface OrderDetail {
   readonly customerId: string;
   readonly items: ReadonlyArray<{ readonly sku: string; readonly quantity: number }>;
   readonly orderId: string;
+}
+
+interface PaymentEventDetail {
+  orderId: string;
+  customerId: string;
+  items: Array<{ sku: string; quantity: number }>;
+  timestamp: string;
+  _postDeployTest?: boolean;
+  _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE';
 }
 
 // ============================================================================
@@ -66,7 +75,11 @@ export const handler = async (
 
   try {
     // Extract order details from the event
-    const orderDetail = event.detail || event;
+    type OrderDetailWithTestFields = OrderDetail & {
+      _postDeployTest?: boolean;
+      _postDeployTestForceResult?: 'SUCCESS' | 'FAILURE';
+    };
+    const orderDetail = (event.detail || event) as OrderDetailWithTestFields;
     console.log('📦 Processing order:', JSON.stringify(orderDetail, null, 2));
 
     if (!isValidOrderDetail(orderDetail)) {
@@ -80,7 +93,7 @@ export const handler = async (
     const dynamoDB = createDynamoDBClient();
     for (const item of orderDetail.items) {
       const updateCmd = new UpdateItemCommand({
-        TableName: INVENTORY_DYNAMODB_CONFIG.TABLE_NAME,
+        TableName: process.env.INVENTORY_TABLE_NAME,
         Key: { item_id: { S: item.sku } },
         UpdateExpression:
           'SET reserved = if_not_exists(reserved, :zero) + :qty',
@@ -104,16 +117,21 @@ export const handler = async (
     }
 
     // Emit PaymentRequested event to the payment bus
+    const paymentEventDetail: PaymentEventDetail = {
+      orderId: orderDetail.orderId,
+      customerId: orderDetail.customerId,
+      items: [...orderDetail.items],
+      timestamp: new Date().toISOString(),
+    };
+    // Forward post-deploy test fields if present (for deterministic testing)
+    if (orderDetail._postDeployTest !== undefined) paymentEventDetail._postDeployTest = orderDetail._postDeployTest;
+    if (orderDetail._postDeployTestForceResult !== undefined) paymentEventDetail._postDeployTestForceResult = orderDetail._postDeployTestForceResult;
+
     const paymentEvent = {
       Source: PAYMENT_EVENTBRIDGE_CONFIG.SOURCE,
       DetailType: PAYMENT_EVENTBRIDGE_CONFIG.DETAIL_TYPE,
-      EventBusName: PAYMENT_EVENTBRIDGE_CONFIG.BUS_NAME,
-      Detail: JSON.stringify({
-        orderId: orderDetail.orderId,
-        customerId: orderDetail.customerId,
-        items: orderDetail.items,
-        timestamp: new Date().toISOString(),
-      }),
+      EventBusName: process.env.PAYMENT_EVENTBRIDGE_BUS_NAME,
+      Detail: JSON.stringify(paymentEventDetail),
     };
     const eventBridge = createEventBridgeClient({ region: PAYMENT_EVENTBRIDGE_CONFIG.REGION });
     const putEventsCmd = new PutEventsCommand({ Entries: [paymentEvent] });

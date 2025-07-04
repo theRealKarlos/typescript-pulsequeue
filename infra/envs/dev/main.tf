@@ -35,7 +35,8 @@ module "order_service" {
   handler             = var.lambda_handler
   inventory_table_arn = module.inventory_table.table_arn
   environment_variables = {
-    INVENTORY_TABLE_NAME = module.inventory_table.table_name
+    INVENTORY_TABLE_NAME         = module.inventory_table.table_name
+    PAYMENT_EVENTBRIDGE_BUS_NAME = module.payment_eventbridge_bus.bus_name
   }
 }
 

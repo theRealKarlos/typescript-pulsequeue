@@ -15,7 +15,6 @@ export const ORDER_EVENTBRIDGE_CONFIG = {
 export const PAYMENT_EVENTBRIDGE_CONFIG = {
   SOURCE: 'payment.service',
   DETAIL_TYPE: 'PaymentRequested',
-  BUS_NAME: 'dev-payment-bus',
   REGION: 'eu-west-2',
 } as const;
 

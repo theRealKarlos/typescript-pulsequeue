@@ -198,12 +198,22 @@ async function runEndToEndTest(forceResult: 'SUCCESS' | 'FAILURE', initialStock:
 }
 
 (async () => {
+  let allPassed = true;
   try {
     await runEndToEndTest('SUCCESS', 100, 0);
-    await runEndToEndTest('FAILURE', 100, 0);
-    console.log('\n✅ All end-to-end post-deploy tests completed successfully!');
   } catch (err) {
-    console.error('❌ End-to-end post-deploy test failed:', err);
+    allPassed = false;
+    console.error('❌ End-to-end post-deploy test (SUCCESS) failed:', err);
+  }
+  try {
+    await runEndToEndTest('FAILURE', 100, 0);
+  } catch (err) {
+    allPassed = false;
+    console.error('❌ End-to-end post-deploy test (FAILURE) failed:', err);
+  }
+  if (allPassed) {
+    console.log('\n✅ All end-to-end post-deploy tests completed successfully!');
+  } else {
     process.exit(1);
   }
 })();
