@@ -26,3 +26,9 @@ variable "billing_mode" {
   type        = string
   default     = "PAY_PER_REQUEST"
 }
+
+variable "tags" {
+  description = "Tags to apply to the DynamoDB table."
+  type        = map(string)
+  default     = {}
+}

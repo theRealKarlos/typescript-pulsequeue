@@ -20,4 +20,5 @@ resource "aws_lambda_function" "order_handler" {
   environment {
     variables = var.environment_variables
   }
+  tags = var.tags
 }

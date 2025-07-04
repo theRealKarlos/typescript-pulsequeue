@@ -14,12 +14,14 @@ module "order_eventbridge_bus" {
   source      = "../../modules/eventbridge/bus"
   environment = var.environment
   bus_name    = "order-bus"
+  tags        = local.tags
 }
 
 module "payment_eventbridge_bus" {
   source      = "../../modules/eventbridge/bus"
   environment = var.environment
   bus_name    = "payment-bus"
+  tags        = local.tags
 }
 
 # ============================================================================
@@ -38,6 +40,7 @@ module "order_service" {
     INVENTORY_TABLE_NAME         = module.inventory_table.table_name
     PAYMENT_EVENTBRIDGE_BUS_NAME = module.payment_eventbridge_bus.bus_name
   }
+  tags = local.tags
 }
 
 module "payment_service" {
@@ -51,6 +54,7 @@ module "payment_service" {
   environment_variables = {
     INVENTORY_TABLE_NAME = module.inventory_table.table_name
   }
+  tags = local.tags
 }
 
 # ============================================================================
@@ -93,6 +97,7 @@ module "inventory_table" {
   attributes = [
     { name = "item_id", type = "S" }
   ]
+  tags = local.tags
 }
 
 # ============================================================================
@@ -121,4 +126,12 @@ output "inventory_table_name" {
 
 output "inventory_table_arn" {
   value = module.inventory_table.table_arn
+}
+
+locals {
+  tags = {
+    Environment = var.environment
+    Project     = "PulseQueue"
+    ManagedBy   = "Terraform"
+  }
 }
