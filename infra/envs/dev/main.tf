@@ -101,6 +101,17 @@ module "inventory_table" {
 }
 
 # ============================================================================
+# CLOUDWATCH DASHBOARD
+# ============================================================================
+
+module "cloudwatch_dashboard" {
+  source             = "../../modules/cloudwatch/dashboard"
+  environment        = var.environment
+  dashboard_basename = "pulsequeue-dashboard"
+  dashboard_body     = file("${path.module}/dashboard-body.json")
+}
+
+# ============================================================================
 # OUTPUTS
 # ============================================================================
 

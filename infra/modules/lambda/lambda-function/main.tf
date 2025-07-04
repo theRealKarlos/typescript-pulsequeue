@@ -2,7 +2,7 @@
 # LAMBDA FUNCTION
 # ============================================================================
 
-resource "aws_lambda_function" "order_handler" {
+resource "aws_lambda_function" "this" {
   function_name = "${var.environment}-${var.function_basename}"
   handler       = var.handler
   runtime       = var.runtime
