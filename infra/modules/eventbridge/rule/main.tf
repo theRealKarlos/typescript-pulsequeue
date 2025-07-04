@@ -36,14 +36,6 @@ resource "aws_cloudwatch_event_target" "order_handler" {
 # LAMBDA PERMISSIONS
 # ============================================================================
 
-resource "aws_lambda_permission" "allow_eventbridge" {
-  statement_id  = "AllowExecutionFromEventBridge"
-  action        = "lambda:InvokeFunction"
-  function_name = var.lambda_arn
-  principal     = "events.amazonaws.com"
-  source_arn    = "arn:aws:events:${var.region}:${data.aws_caller_identity.current.account_id}:event-bus/${var.bus_name}"
-}
-
 resource "aws_lambda_permission" "allow_eventbridge_rule" {
   statement_id  = "AllowExecutionFromDevOrderPlacedRule"
   action        = "lambda:InvokeFunction"
