@@ -216,8 +216,25 @@ resource "aws_ecs_task_definition" "grafana" {
         {
           name  = "GF_SERVER_ROOT_URL"
           value = "http://localhost:3000"
+        },
+        {
+          name  = "GF_INSTALL_PLUGINS"
+          value = "grafana-clock-panel,grafana-simple-json-datasource"
+        },
+        {
+          name  = "GF_DATASOURCES_DEFAULT"
+          value = "prometheus"
+        },
+        {
+          name  = "GF_DATASOURCES_PROMETHEUS_URL"
+          value = "http://prometheus:9090"
+        },
+        {
+          name  = "GF_DATASOURCES_PROMETHEUS_ACCESS"
+          value = "proxy"
         }
       ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -235,10 +252,11 @@ resource "aws_ecs_task_definition" "grafana" {
         retries     = 3
         startPeriod = 60
       }
-      mountPoints = []
       volumesFrom = []
     }
   ])
+
+
 
   tags = local.task_definition_config.tags
 }

@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "uid": "pulsequeue-dashboard",
     "id": null,
     "title": "PulseQueue Monitoring",
     "tags": ["pulsequeue", "lambda", "monitoring"],

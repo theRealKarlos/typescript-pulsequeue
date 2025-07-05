@@ -19,7 +19,8 @@
     "test:payment-service": "jest scripts/payment-service-handler.test.ts",
     "plan:dev": "cd infra/envs/dev && terraform plan -out=tfplan",
     "apply:dev": "cd infra/envs/dev && terraform apply tfplan",
-    "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts"
+    "postdeploy:dev": "cross-env AWS_REGION=eu-west-2 ts-node scripts/post-deploy-test.ts",
+    "setup-grafana": "ts-node scripts/setup-grafana-dashboard.ts"
   },
   "keywords": [],
   "author": "",
@@ -52,6 +53,7 @@
     "@aws-sdk/client-dynamodb": "^3.840.0",
     "@aws-sdk/client-eventbridge": "^3.839.0",
     "@aws-sdk/client-sqs": "^3.839.0",
+    "axios": "^1.10.0",
     "minimist": "^1.2.8",
     "prom-client": "^15.1.0"
   }
