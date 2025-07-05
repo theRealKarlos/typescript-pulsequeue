@@ -363,8 +363,10 @@ output "prometheus_access_instructions" {
     5. Note the public IP
     6. Access: http://<PUBLIC_IP>:9090
     
-    Or use AWS CLI:
-    aws ecs describe-tasks --cluster ${aws_ecs_cluster.monitoring.name} --tasks $(aws ecs list-tasks --cluster ${aws_ecs_cluster.monitoring.name} --service-name ${aws_ecs_service.prometheus.name} --query 'taskArns[0]' --output text)
+    To get public IP manually:
+    1. Get task details: aws ecs describe-tasks --cluster ${aws_ecs_cluster.monitoring.name} --tasks <task-arn> --region eu-west-2
+    2. Find networkInterfaceId in the output
+    3. Get public IP: aws ec2 describe-network-interfaces --network-interface-ids <network-interface-id> --region eu-west-2
   EOT
 }
 
@@ -382,7 +384,9 @@ output "grafana_access_instructions" {
     6. Access: http://<PUBLIC_IP>:3000
     7. Login: admin / [password from secrets.auto.tfvars]
     
-    Or use AWS CLI:
-    aws ecs describe-tasks --cluster ${aws_ecs_cluster.monitoring.name} --tasks $(aws ecs list-tasks --cluster ${aws_ecs_cluster.monitoring.name} --service-name ${aws_ecs_service.grafana.name} --query 'taskArns[0]' --output text)
+    To get public IP manually:
+    1. Get task details: aws ecs describe-tasks --cluster ${aws_ecs_cluster.monitoring.name} --tasks <task-arn> --region eu-west-2
+    2. Find networkInterfaceId in the output
+    3. Get public IP: aws ec2 describe-network-interfaces --network-interface-ids <network-interface-id> --region eu-west-2
   EOT
 }
