@@ -1,6 +1,6 @@
 # TypeScript PulseQueue
 
-A modern, type-safe, event-driven serverless application built with TypeScript, AWS Lambda, EventBridge, and DynamoDB. This project demonstrates best practices for scalable, decoupled architectures, robust testing, and infrastructure-as-code.
+A modern, type-safe, event-driven serverless e-commerce application built with TypeScript, AWS Lambda, EventBridge, DynamoDB, and comprehensive monitoring. This project demonstrates best practices for scalable, decoupled architectures, robust testing, infrastructure-as-code, and observability.
 
 ---
 
@@ -12,9 +12,11 @@ A modern, type-safe, event-driven serverless application built with TypeScript, 
 - [Getting Started](#getting-started)
 - [Development & Testing](#development--testing)
 - [Deployment](#deployment)
+- [Monitoring](#monitoring)
 - [Project Structure](#project-structure)
 - [Event & Test File Reference](#event--test-file-reference)
 - [Best Practices](#best-practices)
+- [Future Improvements](#future-improvements)
 - [License](#license)
 
 ---
@@ -31,6 +33,9 @@ TypeScript PulseQueue is a concept/prototype app that demonstrates event-driven 
 - **Environment-Aware Infrastructure**: Modular, reusable, and isolated by environment
 - **Code Quality**: ESLint integration and automated checks
 - **Infrastructure as Code**: Terraform-managed AWS resources
+- **Comprehensive Monitoring**: Prometheus metrics, Grafana dashboards, CloudWatch integration
+- **Inventory Management**: DynamoDB-based stock reservation and tracking
+- **Payment Processing**: Simulated payment flows with success/failure scenarios
 
 ---
 
@@ -40,26 +45,40 @@ TypeScript PulseQueue is a concept/prototype app that demonstrates event-driven 
 
 - **Order Lambda**: Receives order events, reserves inventory, emits payment events
 - **Payment Lambda**: Processes payment events, updates inventory based on payment outcome
+- **Metrics Lambda**: Exposes Prometheus metrics for monitoring
 - **EventBridge Buses**: Route events between services
 - **DynamoDB Table**: Stores inventory state
+- **API Gateway**: Exposes metrics endpoint for Prometheus scraping
+- **Monitoring Stack**: Prometheus and Grafana for observability
 
 ### Event Flow
 
 ```
 OrderPlaced (EventBridge) → Order Lambda → PaymentRequested (EventBridge) → Payment Lambda → DynamoDB
+                                                      ↓
+                                              Metrics Collection
+                                                      ↓
+                                              Prometheus → Grafana
 ```
 
 - **Order Lambda** increments `reserved` in DynamoDB and emits a payment event
 - **Payment Lambda** decrements `reserved` and, on success, decrements `stock`
+- **Metrics Collection** tracks performance, errors, and business metrics
+- **Monitoring** provides real-time visibility into system health and performance
 
 ---
 
 ## Technology Stack
 
 - **TypeScript** (strict, type-safe)
+- **TypeScript** (strict, type-safe)
 - **AWS Lambda** (Node.js 22.x)
 - **AWS EventBridge** (event routing)
 - **AWS DynamoDB** (inventory state)
+- **AWS API Gateway** (metrics endpoint)
+- **AWS CloudWatch** (metrics persistence)
+- **Prometheus** (metrics collection)
+- **Grafana** (monitoring dashboards)
 - **Terraform** (infrastructure as code)
 - **Jest** (unit testing)
 - **ESLint** (code quality)
@@ -163,6 +182,57 @@ This will:
 3. Build the Lambda package(s)
 4. Run Terraform plan & apply
 5. Run the post-deploy integration test
+6. Set up monitoring infrastructure (Prometheus & Grafana)
+
+---
+
+## Monitoring
+
+### Overview
+
+The application includes comprehensive monitoring with Prometheus metrics collection and Grafana dashboards for real-time observability.
+
+### Metrics Collection
+
+- **Lambda Performance**: Request rates, durations, error rates
+- **Business Metrics**: Orders processed, payments processed, success/failure rates
+- **Inventory Metrics**: Stock reservations, inventory operations
+- **Custom Metrics**: CloudWatch integration for persistence across Lambda invocations
+
+### Monitoring Stack
+
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Dashboard visualization
+- **CloudWatch**: Metrics persistence and fallback
+- **API Gateway**: Metrics endpoint for Prometheus scraping
+
+### Dashboard Setup
+
+After deployment, set up the Grafana dashboard:
+
+```bash
+# Get the Grafana URL from Terraform outputs
+cd infra/envs/dev && terraform output grafana_access_instructions
+
+# Set up the dashboard with the provided credentials
+npm run setup-grafana <grafana-url> <username> <password> <prometheus-url>
+```
+
+### Dashboard Features
+
+- **Lambda Performance**: Request rates, durations, error rates by function
+- **Order Processing**: Success/failure rates, processing times
+- **Payment Processing**: Payment success rates, processing durations
+- **Inventory Operations**: Stock reservation rates, inventory operation success
+- **Real-time Updates**: 10-second refresh intervals
+
+### Metrics Endpoint
+
+The metrics service exposes Prometheus-compatible metrics at:
+
+```
+https://<api-gateway-url>/dev/metrics
+```
 
 ---
 
@@ -266,6 +336,107 @@ TypeScript-PulseQueue/
 - **Infrastructure as Code**: All AWS resources managed via Terraform modules
 - **Testing**: Robust unit and integration tests, with inventory reset and log assertions
 - **Code Quality**: ESLint enforced, no explicit `any` allowed
+
+---
+
+## Future Improvements
+
+### E-commerce Pipeline Extension
+
+The current implementation covers the core order processing flow. Future enhancements will extend the event-driven architecture to include the complete e-commerce pipeline:
+
+#### Planned Event Types
+
+1. **Customer Events**
+   - `CustomerRegistered` - New customer account creation
+   - `CustomerProfileUpdated` - Profile information changes
+   - `CustomerLogin` - Authentication events
+
+2. **Catalog Events**
+   - `ProductCreated` - New product addition
+   - `ProductUpdated` - Product information changes
+   - `ProductInventoryUpdated` - Stock level changes
+   - `CategoryCreated` - Product categorization
+
+3. **Shopping Cart Events**
+   - `CartItemAdded` - Items added to cart
+   - `CartItemRemoved` - Items removed from cart
+   - `CartCleared` - Cart abandonment
+   - `CartCheckoutInitiated` - Checkout process start
+
+4. **Order Processing Events** (Current)
+   - `OrderPlaced` - Order creation (✅ Implemented)
+   - `OrderValidated` - Order validation
+   - `OrderConfirmed` - Order confirmation
+   - `OrderShipped` - Shipping status
+   - `OrderDelivered` - Delivery confirmation
+   - `OrderCancelled` - Order cancellation
+
+5. **Payment Events** (Current)
+   - `PaymentRequested` - Payment initiation (✅ Implemented)
+   - `PaymentProcessed` - Payment completion
+   - `PaymentFailed` - Payment failure
+   - `RefundRequested` - Refund initiation
+   - `RefundProcessed` - Refund completion
+
+6. **Fulfillment Events**
+   - `ShipmentCreated` - Shipping label generation
+   - `ShipmentTracked` - Delivery tracking
+   - `ShipmentDelivered` - Delivery confirmation
+
+7. **Customer Service Events**
+   - `SupportTicketCreated` - Customer support requests
+   - `SupportTicketResolved` - Issue resolution
+   - `CustomerFeedback` - Reviews and ratings
+
+#### Architecture Enhancements
+
+- **Event Sourcing**: Complete audit trail of all business events
+- **CQRS Pattern**: Separate read and write models for scalability
+- **Saga Pattern**: Distributed transaction management for complex workflows
+- **Event Replay**: Ability to replay events for debugging and analytics
+
+### Automated Dashboard Creation
+
+Currently, the Grafana dashboard setup requires manual configuration. Future improvements will automate this process:
+
+#### Planned Automation
+
+1. **Terraform Integration**
+   - Automate Grafana dashboard creation via Terraform providers
+   - Store dashboard configurations as code
+   - Version control dashboard changes
+
+2. **Deployment Pipeline Enhancement**
+   - Include dashboard setup in the deployment script
+   - Automatic dashboard provisioning after infrastructure deployment
+   - Environment-specific dashboard configurations
+
+3. **Dashboard Templates**
+   - Reusable dashboard templates for different environments
+   - Dynamic metric configuration based on deployed services
+   - Automated alert rule creation
+
+4. **Monitoring as Code**
+   - Grafana dashboard definitions in JSON/YAML
+   - Prometheus alert rules as code
+   - Automated monitoring stack deployment
+
+#### Implementation Benefits
+
+- **Reduced Manual Work**: No manual dashboard setup required
+- **Consistency**: Same dashboards across all environments
+- **Version Control**: Dashboard changes tracked in Git
+- **Scalability**: Easy to add new metrics and dashboards
+- **Reliability**: Automated setup reduces human error
+
+### Additional Improvements
+
+- **Real-time Notifications**: Slack/Teams integration for alerts
+- **Performance Optimization**: Lambda cold start optimization
+- **Security Enhancements**: Enhanced IAM policies, encryption
+- **Cost Optimization**: Resource right-sizing, auto-scaling
+- **Disaster Recovery**: Multi-region deployment, backup strategies
 
 ---
 
