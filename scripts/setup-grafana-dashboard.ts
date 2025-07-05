@@ -1,13 +1,23 @@
 #!/usr/bin/env ts-node
 
+/**
+ * Grafana Dashboard Setup Script
+ * 
+ * This script automates the setup of Grafana for the PulseQueue monitoring system.
+ * It creates a Prometheus data source and imports a pre-configured dashboard
+ * to visualize Lambda metrics and system performance.
+ */
+
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Configuration interfaces for type safety
 interface GrafanaConfig {
   grafanaUrl: string;
   username: string;
   password: string;
+  prometheusUrl: string; // Add Prometheus URL parameter
 }
 
 interface DataSource {
@@ -23,17 +33,21 @@ interface Dashboard {
   overwrite: boolean;
 }
 
+/**
+ * Main function to set up Grafana with Prometheus data source and dashboard
+ * @param config - Grafana connection configuration
+ */
 async function setupGrafana(config: GrafanaConfig) {
-  const { grafanaUrl, username, password } = config;
+  const { grafanaUrl, username, password, prometheusUrl } = config;
   
   console.log('🔧 Setting up Grafana dashboard...');
   
-  // 1. Create Prometheus data source
+  // Step 1: Create Prometheus data source for metrics collection
   console.log('📊 Creating Prometheus data source...');
   const dataSource: DataSource = {
     name: 'Prometheus',
     type: 'prometheus',
-    url: 'http://prometheus:9090', // Internal ECS service discovery
+    url: prometheusUrl, // Use the provided Prometheus URL
     access: 'proxy',
     isDefault: true
   };
@@ -60,7 +74,7 @@ async function setupGrafana(config: GrafanaConfig) {
     }
   }
   
-  // 2. Import dashboard
+  // Step 2: Import pre-configured dashboard with Lambda metrics panels
   console.log('📋 Importing dashboard...');
   const dashboardPath = path.join(__dirname, '../infra/envs/dev/grafana-dashboard.json');
   const dashboardContent = fs.readFileSync(dashboardPath, 'utf8');
@@ -100,15 +114,23 @@ async function setupGrafana(config: GrafanaConfig) {
   }
 }
 
-// Usage instructions
+/**
+ * CLI Entry Point
+ * 
+ * When run directly, this script expects four command-line arguments:
+ * - grafana-url: The URL where Grafana is accessible
+ * - username: Grafana admin username
+ * - password: Grafana admin password
+ * - prometheus-url: The URL where Prometheus is accessible
+ */
 if (require.main === module) {
   const args = process.argv.slice(2);
   
-  if (args.length < 3) {
+  if (args.length < 4) {
     console.log(`
-Usage: npm run setup-grafana <grafana-url> <username> <password>
+Usage: npm run setup-grafana <grafana-url> <username> <password> <prometheus-url>
 
-Example: npm run setup-grafana http://1.2.3.4:3000 admin mypassword
+Example: npm run setup-grafana http://1.2.3.4:3000 admin mypassword http://5.6.7.8:9090
 
 This will:
 1. Create a Prometheus data source
@@ -118,9 +140,9 @@ This will:
     process.exit(1);
   }
   
-  const [grafanaUrl, username, password] = args as [string, string, string];
+  const [grafanaUrl, username, password, prometheusUrl] = args as [string, string, string, string];
   
-  setupGrafana({ grafanaUrl, username, password })
+  setupGrafana({ grafanaUrl, username, password, prometheusUrl })
     .then(() => {
       console.log('🎉 Grafana setup completed successfully!');
     })
