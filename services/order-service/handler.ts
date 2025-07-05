@@ -2,6 +2,7 @@
 // - Validates and processes order events from EventBridge
 // - Interacts with DynamoDB for stock reservation
 // - Emits payment events to EventBridge
+// - Collects Prometheus metrics for monitoring
 // - Designed for production use and testability
 
 // ============================================================================
@@ -11,6 +12,13 @@ import { UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { createDynamoDBClient, createEventBridgeClient } from '@services/libs/aws-clients';
 import { PAYMENT_EVENTBRIDGE_CONFIG } from '@services/shared/constants';
+import { 
+  recordLambdaRequest, 
+  recordLambdaError, 
+  recordOrderProcessed, 
+  recordStockReservation,
+  recordInventoryOperation 
+} from '@services/shared/metrics';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -71,6 +79,10 @@ export const handler = async (
   statusCode: number;
   body: string;
 }> => {
+  // Track execution time for Prometheus metrics
+  const startTime = Date.now();
+  const functionName = 'order-service';
+  
   console.log('🚀 Lambda handler received event:', JSON.stringify(event, null, 2));
 
   try {
@@ -83,6 +95,12 @@ export const handler = async (
     console.log('📦 Processing order:', JSON.stringify(orderDetail, null, 2));
 
     if (!isValidOrderDetail(orderDetail)) {
+      // Record validation error metrics for Prometheus
+      const duration = (Date.now() - startTime) / 1000;
+      recordLambdaRequest(functionName, 'error', duration);        // Track Lambda request with error status
+      recordLambdaError(functionName, 'validation_error');         // Increment error counter for validation errors
+      recordOrderProcessed('error', duration, 'validation_error'); // Track order processing failure
+      
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Invalid order detail structure' }),
@@ -107,8 +125,24 @@ export const handler = async (
       try {
         const result = await dynamoDB.send(updateCmd);
         console.log(`✅ Reserved stock for SKU ${item.sku} (orderId: ${orderDetail.orderId}):`, result.Attributes);
+        
+        // Record successful stock reservation metrics for Prometheus
+        recordStockReservation('success', item.sku);           // Track successful stock reservations by SKU
+        recordInventoryOperation('reserve', 'success');        // Track successful inventory reserve operations
+        
       } catch (err) {
         console.error(`❌ Failed to reserve stock for SKU ${item.sku}:`, err);
+        
+        // Record stock reservation failure metrics for Prometheus
+        recordStockReservation('insufficient_stock', item.sku); // Track insufficient stock errors by SKU
+        recordInventoryOperation('reserve', 'error');          // Track failed inventory reserve operations
+        
+        // Record overall Lambda error metrics
+        const duration = (Date.now() - startTime) / 1000;
+        recordLambdaRequest(functionName, 'error', duration);    // Track Lambda request with error status
+        recordLambdaError(functionName, 'stock_error');          // Increment error counter for stock errors
+        recordOrderProcessed('error', duration, 'stock_error');  // Track order processing failure due to stock
+        
         return {
           statusCode: 409,
           body: JSON.stringify({ error: `Insufficient stock for SKU ${item.sku}` }),
@@ -138,6 +172,11 @@ export const handler = async (
     const putResult = await eventBridge.send(putEventsCmd);
     console.log('📤 PaymentRequested event sent:', putResult);
 
+    // Record successful order processing metrics for Prometheus
+    const duration = (Date.now() - startTime) / 1000;
+    recordLambdaRequest(functionName, 'success', duration);     // Track successful Lambda request
+    recordOrderProcessed('success', duration);                  // Track successful order processing
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -148,6 +187,13 @@ export const handler = async (
     };
   } catch (error) {
     console.error('❌ Error processing order event:', error);
+    
+    // Record unexpected error metrics for Prometheus
+    const duration = (Date.now() - startTime) / 1000;
+    recordLambdaRequest(functionName, 'error', duration);       // Track Lambda request with error status
+    recordLambdaError(functionName, 'unknown_error');           // Increment error counter for unknown errors
+    recordOrderProcessed('error', duration, 'unknown_error');   // Track order processing failure due to unknown error
+    
     return {
       statusCode: 500,
       body: JSON.stringify({

@@ -4,16 +4,22 @@ variable "region" {
 }
 
 variable "environment" {
-  description = "The environment name (e.g., dev, staging, prod)"
+  description = "Environment name (e.g., dev, staging, prod)"
   type        = string
 }
 
 variable "lambda_runtime" {
-  description = "The runtime for all Lambda functions"
+  description = "Lambda runtime for all Lambda functions"
   type        = string
 }
 
 variable "lambda_handler" {
-  description = "The handler for all Lambda functions"
+  description = "Lambda handler for all Lambda functions"
   type        = string
+}
+
+variable "grafana_admin_password" {
+  description = "Admin password for Grafana"
+  type        = string
+  sensitive   = true
 }

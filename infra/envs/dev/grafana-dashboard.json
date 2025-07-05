@@ -1,0 +1,148 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "PulseQueue Monitoring",
+    "tags": ["pulsequeue", "lambda", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Lambda Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(lambda_requests_total[5m])",
+            "legendFormat": "{{function_name}} - {{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Lambda Request Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(lambda_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile - {{function_name}}"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(lambda_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile - {{function_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Lambda Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(lambda_errors_total[5m])",
+            "legendFormat": "{{function_name}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Order Processing Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(orders_processed_total[5m])",
+            "legendFormat": "{{status}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Payment Processing Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(payments_processed_total[5m])",
+            "legendFormat": "{{status}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Stock Reservations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(stock_reservations_total[5m])",
+            "legendFormat": "{{status}} - {{sku}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Inventory Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(inventory_operations_total[5m])",
+            "legendFormat": "{{operation_type}} - {{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "Order Processing Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(order_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(order_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "Payment Processing Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(payment_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(payment_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32}
+      },
+      {
+        "id": 10,
+        "title": "Stock Quantities",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "stock_quantity",
+            "legendFormat": "{{sku}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "10s"
+  }
+} 

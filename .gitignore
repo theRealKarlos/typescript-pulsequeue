@@ -9,3 +9,9 @@ infra/envs/dev/tfplan
 *.tfstate
 *.tfstate.*
 
+# ============================================================================
+# SECRETS FILES - DO NOT COMMIT
+# ============================================================================
+secrets.auto.tfvars
+*.auto.tfvars
+

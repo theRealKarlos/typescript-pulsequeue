@@ -3,9 +3,11 @@
 # ============================================================================
 
 output "bus_name" {
-  value = aws_cloudwatch_event_bus.custom.name
+  description = "Name of the EventBridge bus"
+  value       = aws_cloudwatch_event_bus.custom.name
 }
 
 output "bus_arn" {
-  value = aws_cloudwatch_event_bus.custom.arn
+  description = "ARN of the EventBridge bus"
+  value       = aws_cloudwatch_event_bus.custom.arn
 }

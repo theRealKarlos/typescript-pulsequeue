@@ -53,6 +53,8 @@ resource "aws_sqs_queue" "eventbridge_dlq" {
 
   visibility_timeout_seconds = 30
   message_retention_seconds  = 1209600
+
+  tags = var.tags
 }
 
 # ============================================================================

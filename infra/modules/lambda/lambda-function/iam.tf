@@ -65,6 +65,8 @@ resource "aws_iam_role_policy" "lambda_logging" {
 }
 
 resource "aws_iam_role_policy" "lambda_inventory_dynamodb_policy" {
+  count = var.inventory_table_arn != null ? 1 : 0
+
   name = "${var.environment}-${var.function_basename}-allow-inventory-dynamodb-access"
   role = aws_iam_role.lambda_exec.id
 

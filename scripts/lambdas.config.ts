@@ -18,5 +18,11 @@ export const lambdas: LambdaBuildConfig[] = [
     zip: 'dist/payment-service.zip',
     name: 'Payment Service Lambda',
   },
+  {
+    entry: 'services/metrics-service/handler.ts',
+    outdir: 'dist/metrics-service',
+    zip: 'dist/metrics-service.zip',
+    name: 'Metrics Service Lambda',
+  },
   // Add more Lambdas here as needed
 ]; 
