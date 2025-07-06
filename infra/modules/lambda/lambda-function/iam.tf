@@ -87,6 +87,29 @@ resource "aws_iam_role_policy" "lambda_cloudwatch_metrics" {
 }
 
 # ============================================================================
+# CLOUDWATCH READ METRICS PERMISSION (for metrics service only)
+# ============================================================================
+
+resource "aws_iam_role_policy" "lambda_cloudwatch_read_metrics" {
+  count = var.function_basename == "metrics-service-handler" ? 1 : 0
+  name  = "${var.environment}-${var.function_basename}-cloudwatch-read-metrics"
+  role  = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:GetMetricStatistics"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# ============================================================================
 # DYNAMODB POLICY (MOVED TO MAIN CONFIGURATION)
 # ============================================================================
 # 

@@ -9,7 +9,7 @@ rule_files:
 scrape_configs:
   - job_name: 'lambda-metrics'
     static_configs:
-      - targets: ['${metrics_api_url}'] # API Gateway URL for metrics service
+      - targets: ['${metrics_api_host}'] # API Gateway hostname for metrics service
     metrics_path: '/dev/metrics'
     scrape_interval: 30s
     scheme: 'https'

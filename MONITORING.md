@@ -1,6 +1,56 @@
 # Prometheus & Grafana Monitoring Setup
 
-This guide shows you how to set up **cost-effective Prometheus and Grafana monitoring** for your TypeScript PulseQueue e-commerce application using a **unified ECS cluster** with comprehensive metrics collection.
+This guide shows you how to set up **cost-effective Prometheus and Grafana monitoring** for your TypeScript PulseQueue e-commerce application using a **unified ECS cluster** with comprehensive metrics collection. The monitoring architecture is specifically designed to handle serverless Lambda environments where traditional Prometheus scraping doesn't work effectively.
+
+## 🏗️ **Monitoring Architecture**
+
+### **Why This Hybrid Approach?**
+
+**Problem**: Lambda functions have no persistent state between invocations. Traditional Prometheus scraping from Lambda endpoints would only capture metrics from the current invocation, missing all historical data.
+
+**Solution**: Hybrid CloudWatch + Prometheus approach:
+
+1. **Lambda Functions** → Send metrics to CloudWatch for persistence
+2. **Metrics Service** → Queries CloudWatch and converts to Prometheus format
+3. **Prometheus** → Scrapes metrics service every 30 seconds
+4. **Grafana** → Visualizes data from Prometheus
+
+### **Metrics Flow Diagram**
+
+```
+Lambda Functions (order-service, payment-service)
+       ↓ (send metrics to CloudWatch)
+CloudWatch (persistent storage)
+       ↓ (query via metrics service)
+Metrics Service (converts to Prometheus format)
+       ↓ (scraped every 30s)
+Prometheus (time-series database)
+       ↓ (queries)
+Grafana (dashboards)
+```
+
+### **Histogram Metrics Reconstruction**
+
+**Challenge**: CloudWatch custom metrics only provide Sum values, not the bucket data required for Prometheus histograms.
+
+**Solution**: The metrics service intelligently reconstructs histogram buckets:
+
+```typescript
+// CloudWatch provides: Sum = 1.5 seconds
+// Metrics service estimates: Count = 5 operations (1.5/0.3)
+// Generates proper Prometheus histogram format:
+order_processing_duration_seconds_bucket{le="0.1"} 0
+order_processing_duration_seconds_bucket{le="0.5"} 5  // All operations fall here
+order_processing_duration_seconds_bucket{le="1"} 5
+order_processing_duration_seconds_bucket{le="2"} 5
+order_processing_duration_seconds_bucket{le="5"} 5
+order_processing_duration_seconds_bucket{le="10"} 5
+order_processing_duration_seconds_bucket{le="+Inf"} 5
+order_processing_duration_seconds_sum 1.5
+order_processing_duration_seconds_count 5
+```
+
+This approach ensures that Prometheus receives proper histogram data that Grafana can visualize effectively.
 
 ## 🎯 **Cost Analysis**
 

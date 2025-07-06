@@ -190,7 +190,30 @@ This will:
 
 ### Overview
 
-The application includes comprehensive monitoring with Prometheus metrics collection and Grafana dashboards for real-time observability.
+The application includes comprehensive monitoring with Prometheus metrics collection and Grafana dashboards for real-time observability. The monitoring architecture is designed to handle the challenges of serverless environments where Lambda functions have no persistent state between invocations.
+
+### Monitoring Architecture
+
+#### Why CloudWatch + Prometheus?
+
+**Problem**: Lambda functions lose in-memory metrics between invocations. Traditional Prometheus scraping from Lambda endpoints would only capture metrics from the current invocation, missing historical data.
+
+**Solution**: Hybrid approach using both CloudWatch and Prometheus:
+
+1. **Lambda Functions** send metrics to CloudWatch for persistence
+2. **Metrics Service** queries CloudWatch and converts to Prometheus format
+3. **Prometheus** scrapes the metrics service every 30 seconds
+4. **Grafana** visualizes the data from Prometheus
+
+#### Metrics Flow
+
+```
+Lambda Functions → CloudWatch (persistence)
+       ↓
+Metrics Service → Prometheus Format
+       ↓
+Prometheus (scrapes every 30s) → Grafana Dashboards
+```
 
 ### Metrics Collection
 
@@ -198,6 +221,34 @@ The application includes comprehensive monitoring with Prometheus metrics collec
 - **Business Metrics**: Orders processed, payments processed, success/failure rates
 - **Inventory Metrics**: Stock reservations, inventory operations
 - **Custom Metrics**: CloudWatch integration for persistence across Lambda invocations
+
+### Histogram Metrics Reconstruction
+
+**Challenge**: CloudWatch custom metrics only provide Sum values, not bucket data required for Prometheus histograms.
+
+**Solution**: The metrics service reconstructs histogram buckets by:
+
+1. Estimating count from sum using typical duration assumptions
+2. Calculating average duration from sum/count
+3. Generating bucket values based on average duration
+4. Providing proper Prometheus histogram format
+
+Example for `order_processing_duration_seconds`:
+
+```prometheus
+# CloudWatch provides: Sum = 1.5 seconds
+# Metrics service estimates: Count = 5 operations (1.5/0.3)
+# Generates buckets: [0.1, 0.5, 1, 2, 5, 10, +Inf]
+order_processing_duration_seconds_bucket{le="0.1"} 0
+order_processing_duration_seconds_bucket{le="0.5"} 5  # All operations fall here
+order_processing_duration_seconds_bucket{le="1"} 5
+order_processing_duration_seconds_bucket{le="2"} 5
+order_processing_duration_seconds_bucket{le="5"} 5
+order_processing_duration_seconds_bucket{le="10"} 5
+order_processing_duration_seconds_bucket{le="+Inf"} 5
+order_processing_duration_seconds_sum 1.5
+order_processing_duration_seconds_count 5
+```
 
 ### Monitoring Stack
 

@@ -40,7 +40,7 @@ locals {
   grafana_log_group    = "/ecs/${local.name_prefix}-grafana"
 
   # Prometheus configuration with metrics API URL substituted
-  prometheus_config_with_url = replace(var.prometheus_config, "$${metrics_api_url}", var.metrics_api_url)
+  prometheus_config_with_url = replace(var.prometheus_config, "$${metrics_api_host}", replace(replace(var.metrics_api_url, "https://", ""), "/dev/metrics", ""))
 
   # Common task definition configuration
   task_definition_config = {
@@ -150,11 +150,12 @@ resource "aws_ecs_task_definition" "prometheus" {
           protocol      = "tcp"
         }
       ]
-      environment = [
-        {
-          name  = "PROMETHEUS_CONFIG"
-          value = local.prometheus_config_with_url
-        }
+      entrypoint = [
+        "/bin/sh",
+        "-c"
+      ]
+      command = [
+        "echo '${local.prometheus_config_with_url}' > /etc/prometheus/prometheus.yml && exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --web.console.libraries=/etc/prometheus/console_libraries --web.console.templates=/etc/prometheus/consoles --storage.tsdb.retention.time=200h --web.enable-lifecycle"
       ]
       logConfiguration = {
         logDriver = "awslogs"
