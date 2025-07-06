@@ -1,4 +1,5 @@
 {
+  "_comment": "Integration test events for post-deploy testing - contains success/failure scenarios for end-to-end testing",
   "success": {
     "orderId": "test-success-123",
     "customerId": "customer-1",

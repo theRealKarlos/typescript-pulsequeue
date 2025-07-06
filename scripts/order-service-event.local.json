@@ -1,4 +1,5 @@
 {
+  "_comment": "Unit test event for Jest tests - simple order structure for local testing",
   "orderId": "test-order-123",
   "customerId": "test-customer-123",
   "items": [
