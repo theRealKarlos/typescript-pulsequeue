@@ -1,4 +1,6 @@
-// modules/lambda/order-service/variables.tf
+# ============================================================================
+# LAMBDA FUNCTION MODULE VARIABLES
+# ============================================================================
 
 variable "lambda_zip_path" {
   description = "Path to the compiled Lambda ZIP file"
