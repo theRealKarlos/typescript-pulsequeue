@@ -17,7 +17,8 @@ import {
   recordLambdaError, 
   recordOrderProcessed, 
   recordStockReservation,
-  recordInventoryOperation 
+  recordInventoryOperation,
+  updateStockQuantity 
 } from '@services/shared/metrics';
 
 // ============================================================================
@@ -129,6 +130,11 @@ export const handler = async (
         // Record successful stock reservation metrics for Prometheus
         recordStockReservation('success', item.sku);           // Track successful stock reservations by SKU
         recordInventoryOperation('reserve', 'success');        // Track successful inventory reserve operations
+        
+        // Update stock quantity metric with the current stock value
+        // Note: We don't update the reserved count as a metric since it's temporary
+        const currentStock = parseInt(result.Attributes?.stock?.N || '0');
+        updateStockQuantity(item.sku, currentStock);
         
       } catch (err) {
         console.error(`❌ Failed to reserve stock for SKU ${item.sku}:`, err);

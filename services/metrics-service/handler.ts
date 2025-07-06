@@ -297,6 +297,38 @@ async function generateSyntheticMetrics(): Promise<string> {
       }));
     }
     
+    // Get stock quantity metrics for prod-001
+    const stockQuantityProd001 = await getCloudWatchSum(
+      'StockQuantity',
+      [
+        { Name: 'SKU', Value: 'prod-001' }
+      ],
+      twoHoursAgo,
+      now
+    );
+    
+    if (stockQuantityProd001 !== undefined) {
+      metrics.push(...generateCounterMetric('stock_quantity', stockQuantityProd001, {
+        sku: 'prod-001'
+      }));
+    }
+    
+    // Get stock quantity metrics for prod-002
+    const stockQuantityProd002 = await getCloudWatchSum(
+      'StockQuantity',
+      [
+        { Name: 'SKU', Value: 'prod-002' }
+      ],
+      twoHoursAgo,
+      now
+    );
+    
+    if (stockQuantityProd002 !== undefined) {
+      metrics.push(...generateCounterMetric('stock_quantity', stockQuantityProd002, {
+        sku: 'prod-002'
+      }));
+    }
+    
     // Get payment processing metrics from CloudWatch
     // Tracks successful payment processing events from the payment service
     const paymentsProcessed = await getCloudWatchSum(

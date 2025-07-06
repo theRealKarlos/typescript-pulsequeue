@@ -16,7 +16,8 @@ import {
   recordLambdaRequest, 
   recordLambdaError, 
   recordPaymentProcessed,
-  recordInventoryOperation 
+  recordInventoryOperation,
+  updateStockQuantity 
 } from '@services/shared/metrics';
 
 const TABLE_NAME = process.env.INVENTORY_TABLE_NAME!;
@@ -67,6 +68,7 @@ export const handler = async (event: PaymentEvent & { _postDeployTestForceResult
         Key: { item_id: { S: item.sku } },
         UpdateExpression: 'ADD reserved :minusQty',
         ExpressionAttributeValues: { ':minusQty': { N: (-item.quantity).toString() } },
+        ReturnValues: 'UPDATED_NEW',
       };
       await client.send(new UpdateItemCommand(updateParams));
       console.log(`Decremented reserved for item ${item.sku} by ${item.quantity}`);
@@ -81,12 +83,17 @@ export const handler = async (event: PaymentEvent & { _postDeployTestForceResult
           Key: { item_id: { S: item.sku } },
           UpdateExpression: 'ADD stock :minusQty',
           ExpressionAttributeValues: { ':minusQty': { N: (-item.quantity).toString() } },
+          ReturnValues: 'UPDATED_NEW',
         };
-        await client.send(new UpdateItemCommand(updateStockParams));
+        const stockResult = await client.send(new UpdateItemCommand(updateStockParams));
         console.log(`Decremented stock for item ${item.sku} by ${item.quantity}`);
         
         // Record successful stock decrement metrics for Prometheus
         recordInventoryOperation('decrement_stock', 'success');   // Track successful stock decrement operations
+        
+        // Update stock quantity metric with the new value
+        const newStockQuantity = parseInt(stockResult.Attributes?.stock?.N || '0');
+        updateStockQuantity(item.sku, newStockQuantity);
       }
     }
 
