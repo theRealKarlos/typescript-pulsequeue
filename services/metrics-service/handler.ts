@@ -88,11 +88,14 @@ function generateHistogramBuckets(
     if (averageDuration <= bucket) {
       cumulativeCount = estimatedCount;
     }
-    lines.push(`${metricName}_bucket${labelPrefix}{le="${bucket}"} ${cumulativeCount}`);
+    // Combine labels with the le label for histogram buckets
+    const allLabels = labelString ? `${labelString},le="${bucket}"` : `le="${bucket}"`;
+    lines.push(`${metricName}_bucket{${allLabels}} ${cumulativeCount}`);
   }
   
   // +Inf bucket always contains the total count
-  lines.push(`${metricName}_bucket${labelPrefix}{le="+Inf"} ${estimatedCount}`);
+  const infLabels = labelString ? `${labelString},le="+Inf"` : `le="+Inf"`;
+  lines.push(`${metricName}_bucket{${infLabels}} ${estimatedCount}`);
   lines.push(`${metricName}_sum${labelPrefix} ${sum}`);
   lines.push(`${metricName}_count${labelPrefix} ${estimatedCount}`);
   
