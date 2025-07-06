@@ -15,11 +15,8 @@ variable "environment" {
   type        = string
 }
 
-variable "inventory_table_arn" {
-  description = "ARN of the DynamoDB inventory table (optional)"
-  type        = string
-  default     = null
-}
+# NOTE: inventory_table_arn variable removed - DynamoDB policies are now handled
+# by a separate module to avoid circular dependencies with computed values.
 
 variable "runtime" {
   description = "Lambda runtime"

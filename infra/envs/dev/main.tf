@@ -40,13 +40,13 @@ module "payment_eventbridge_bus" {
 # ============================================================================
 
 module "order_service" {
-  source              = "../../modules/lambda/lambda-function"
-  lambda_zip_path     = abspath("${path.module}/../../../dist/order-service.zip")
-  function_basename   = "order-service-handler"
-  environment         = var.environment
-  runtime             = var.lambda_runtime
-  handler             = var.lambda_handler
-  inventory_table_arn = module.inventory_table.table_arn
+  source            = "../../modules/lambda/lambda-function"
+  lambda_zip_path   = abspath("${path.module}/../../../dist/order-service.zip")
+  function_basename = "order-service-handler"
+  environment       = var.environment
+  runtime           = var.lambda_runtime
+  handler           = var.lambda_handler
+  # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
     INVENTORY_TABLE_NAME         = module.inventory_table.table_name
     PAYMENT_EVENTBRIDGE_BUS_NAME = module.payment_eventbridge_bus.bus_name
@@ -55,13 +55,13 @@ module "order_service" {
 }
 
 module "payment_service" {
-  source              = "../../modules/lambda/lambda-function"
-  lambda_zip_path     = abspath("${path.module}/../../../dist/payment-service.zip")
-  function_basename   = "payment-service-handler"
-  environment         = var.environment
-  runtime             = var.lambda_runtime
-  handler             = var.lambda_handler
-  inventory_table_arn = module.inventory_table.table_arn
+  source            = "../../modules/lambda/lambda-function"
+  lambda_zip_path   = abspath("${path.module}/../../../dist/payment-service.zip")
+  function_basename = "payment-service-handler"
+  environment       = var.environment
+  runtime           = var.lambda_runtime
+  handler           = var.lambda_handler
+  # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
     INVENTORY_TABLE_NAME = module.inventory_table.table_name
   }
@@ -75,7 +75,8 @@ module "metrics_service" {
   environment       = var.environment
   runtime           = var.lambda_runtime
   handler           = var.lambda_handler
-  tags              = local.tags
+  # NOTE: No inventory_table_arn - Metrics service doesn't need DynamoDB access
+  tags = local.tags
 }
 
 module "metrics_api_gateway" {
@@ -87,6 +88,45 @@ module "metrics_api_gateway" {
   lambda_invoke_arn    = module.metrics_service.lambda_invoke_arn
   lambda_function_name = module.metrics_service.lambda_name
   tags                 = local.tags
+}
+
+# ============================================================================
+# DYNAMODB POLICIES FOR LAMBDA FUNCTIONS
+# ============================================================================
+# 
+# NOTE: These policies are created using a dedicated module to avoid
+# circular dependencies with computed values (DynamoDB table ARN).
+#
+# PROBLEM: When DynamoDB policies are created inside the Lambda module with:
+# count = var.inventory_table_arn != "" ? 1 : 0
+# Terraform cannot determine the count during planning because the table ARN
+# is only known after the DynamoDB table is created.
+#
+# SOLUTION: Use dedicated DynamoDB policy module after both DynamoDB table 
+# and Lambda functions are created, allowing us to reference the known table ARN.
+#
+# DEPENDENCY ORDER:
+# 1. DynamoDB table (module.inventory_table) - creates table_arn
+# 2. Lambda functions (module.order_service, module.payment_service) - creates IAM roles
+# 3. DynamoDB policies (below) - references both table_arn and role IDs
+# ============================================================================
+
+# Order service DynamoDB policy
+module "order_service_dynamodb_policy" {
+  source             = "../../modules/lambda/dynamodb-policy"
+  environment        = var.environment
+  function_basename  = module.order_service.lambda_name
+  lambda_role_id     = module.order_service.lambda_role_id
+  dynamodb_table_arn = module.inventory_table.table_arn
+}
+
+# Payment service DynamoDB policy
+module "payment_service_dynamodb_policy" {
+  source             = "../../modules/lambda/dynamodb-policy"
+  environment        = var.environment
+  function_basename  = module.payment_service.lambda_name
+  lambda_role_id     = module.payment_service.lambda_role_id
+  dynamodb_table_arn = module.inventory_table.table_arn
 }
 
 # ============================================================================
