@@ -594,6 +594,37 @@ The current monitoring focuses on order processing. Future enhancements will ext
 - **Saga Pattern**: Distributed transaction management for complex workflows
 - **Event Replay**: Ability to replay events for debugging and analytics
 
+### **CloudWatch Metrics Validation**
+
+The current monitoring system relies on CloudWatch custom metrics that are converted to Prometheus format. There are likely errors in the CloudWatch metrics that Prometheus is ingesting, particularly around histogram reconstruction and metric aggregation. Future improvements should include:
+
+#### **Planned Validation Enhancements**
+
+1. **Metrics Validation**
+   - Implement validation checks for CloudWatch metric data quality
+   - Add data integrity verification for histogram reconstruction
+   - Validate metric aggregation accuracy
+
+2. **Error Detection**
+   - Add monitoring for CloudWatch metric collection failures
+   - Track missing or delayed metric data
+   - Alert on metric collection errors
+
+3. **Data Quality Monitoring**
+   - Track missing or incorrect metric data
+   - Monitor metric freshness and completeness
+   - Validate metric label consistency
+
+4. **Fallback Mechanisms**
+   - Implement alternative metric collection methods when CloudWatch data is unreliable
+   - Add direct Prometheus metric emission as backup
+   - Create metric collection redundancy
+
+5. **Metric Reconciliation**
+   - Compare CloudWatch data with actual business operations
+   - Identify discrepancies between expected and actual metrics
+   - Validate histogram bucket accuracy against real data
+
 ### **Implementation Roadmap**
 
 1. **Phase 1**: Automated dashboard creation
@@ -601,5 +632,6 @@ The current monitoring focuses on order processing. Future enhancements will ext
 3. **Phase 3**: Cost optimization features
 4. **Phase 4**: E-commerce pipeline extension
 5. **Phase 5**: Advanced analytics and BI
+6. **Phase 6**: CloudWatch metrics validation and error correction
 
 This roadmap ensures continuous improvement while maintaining the cost-effective, lab-friendly approach that makes this monitoring solution accessible for learning and development.
