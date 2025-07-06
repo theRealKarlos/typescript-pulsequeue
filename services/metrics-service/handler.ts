@@ -294,6 +294,57 @@ async function generateSyntheticMetrics(): Promise<string> {
       }));
     }
     
+    // Get payment processing metrics from CloudWatch
+    // Tracks successful payment processing events from the payment service
+    const paymentsProcessed = await getCloudWatchSum(
+      'PaymentsProcessed',
+      [
+        { Name: 'Status', Value: 'success' },
+        { Name: 'ErrorType', Value: 'none' }
+      ],
+      twoHoursAgo,
+      now
+    );
+    
+    if (paymentsProcessed !== undefined) {
+      metrics.push(...generateCounterMetric('payments_processed_total', paymentsProcessed, {
+        status: 'success',
+        error_type: 'none'
+      }));
+    }
+    
+    // Get payment processing duration metrics from CloudWatch
+    // Similar to order processing duration, we reconstruct histogram from CloudWatch Sum data
+    // This tracks how long payment processing takes, including DynamoDB operations
+    const paymentDuration = await getCloudWatchSum(
+      'PaymentProcessingDuration',
+      [],
+      twoHoursAgo,
+      now
+    );
+    
+    if (paymentDuration !== undefined) {
+      metrics.push(...generateHistogramBuckets('payment_processing_duration_seconds', paymentDuration));
+    }
+    
+    // Get Lambda duration metrics for payment service from CloudWatch
+    // Tracks execution time of the payment service Lambda function
+    // Important for monitoring payment service performance and costs
+    const paymentLambdaDuration = await getCloudWatchSum(
+      'LambdaDuration',
+      [
+        { Name: 'FunctionName', Value: 'payment-service' }
+      ],
+      twoHoursAgo,
+      now
+    );
+    
+    if (paymentLambdaDuration !== undefined) {
+      metrics.push(...generateHistogramBuckets('lambda_request_duration_seconds', paymentLambdaDuration, {
+        function_name: 'payment-service'
+      }));
+    }
+    
     console.log('📈 Generated metrics:', metrics);
     
   } catch (error) {

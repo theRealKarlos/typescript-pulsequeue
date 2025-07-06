@@ -217,10 +217,31 @@ Prometheus (scrapes every 30s) → Grafana Dashboards
 
 ### Metrics Collection
 
-- **Lambda Performance**: Request rates, durations, error rates
-- **Business Metrics**: Orders processed, payments processed, success/failure rates
-- **Inventory Metrics**: Stock reservations, inventory operations
-- **Custom Metrics**: CloudWatch integration for persistence across Lambda invocations
+The monitoring system collects comprehensive metrics across all services:
+
+#### **Lambda Performance Metrics**
+
+- **Request Rates**: `lambda_requests_total` for order-service and payment-service
+- **Execution Duration**: `lambda_request_duration_seconds` histograms for both services
+- **Error Tracking**: Error rates and types for debugging and alerting
+
+#### **Business Metrics**
+
+- **Order Processing**: `orders_processed_total` with success/failure rates
+- **Payment Processing**: `payments_processed_total` with success/failure rates
+- **Processing Duration**: `order_processing_duration_seconds` and `payment_processing_duration_seconds` histograms
+
+#### **Inventory Metrics**
+
+- **Stock Reservations**: `stock_reservations_total` by SKU and status
+- **Inventory Operations**: `inventory_operations_total` for reserve, decrement_stock, decrement_reserved operations
+- **Stock Quantities**: Current stock levels by SKU (when implemented)
+
+#### **Data Persistence**
+
+- **CloudWatch Integration**: All metrics persist across Lambda invocations
+- **Real-time Collection**: Metrics service queries CloudWatch every 30 seconds
+- **Historical Data**: 2-hour query window ensures comprehensive data capture
 
 ### Histogram Metrics Reconstruction
 
