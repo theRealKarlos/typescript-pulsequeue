@@ -65,6 +65,28 @@ resource "aws_iam_role_policy" "lambda_logging" {
 }
 
 # ============================================================================
+# CLOUDWATCH METRICS PERMISSIONS
+# ============================================================================
+
+resource "aws_iam_role_policy" "lambda_cloudwatch_metrics" {
+  name = "${var.environment}-${var.function_basename}-cloudwatch-metrics"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# ============================================================================
 # DYNAMODB POLICY (MOVED TO MAIN CONFIGURATION)
 # ============================================================================
 # 

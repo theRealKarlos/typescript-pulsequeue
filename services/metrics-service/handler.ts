@@ -24,8 +24,8 @@ async function generateSyntheticMetrics(): Promise<string> {
   const metrics: string[] = [];
   
   try {
-    // Get Lambda request metrics from CloudWatch
-    const lambdaRequestsCommand = new GetMetricStatisticsCommand({
+    // Get Lambda request metrics from CloudWatch for order service
+    const orderLambdaRequestsCommand = new GetMetricStatisticsCommand({
       Namespace: 'PulseQueue',
       MetricName: 'LambdaRequests',
       StartTime: fiveMinutesAgo,
@@ -33,19 +33,42 @@ async function generateSyntheticMetrics(): Promise<string> {
       Period: 300,
       Statistics: ['Sum'],
       Dimensions: [
-        { Name: 'FunctionName', Value: 'order-service-handler' },
+        { Name: 'FunctionName', Value: 'order-service' },
         { Name: 'Status', Value: 'success' }
       ]
     });
     
-    const lambdaRequestsResponse = await cloudWatchClient.send(lambdaRequestsCommand);
-    if (lambdaRequestsResponse.Datapoints && lambdaRequestsResponse.Datapoints.length > 0) {
-      const datapoint = lambdaRequestsResponse.Datapoints[0];
+    const orderLambdaResponse = await cloudWatchClient.send(orderLambdaRequestsCommand);
+    if (orderLambdaResponse.Datapoints && orderLambdaResponse.Datapoints.length > 0) {
+      const datapoint = orderLambdaResponse.Datapoints[0];
       if (datapoint && datapoint.Sum !== undefined) {
         const value = datapoint.Sum;
         metrics.push(`# HELP lambda_requests_total Total number of Lambda requests`);
         metrics.push(`# TYPE lambda_requests_total counter`);
         metrics.push(`lambda_requests_total{function_name="order-service",status="success"} ${value}`);
+      }
+    }
+    
+    // Get Lambda request metrics from CloudWatch for payment service
+    const paymentLambdaRequestsCommand = new GetMetricStatisticsCommand({
+      Namespace: 'PulseQueue',
+      MetricName: 'LambdaRequests',
+      StartTime: fiveMinutesAgo,
+      EndTime: now,
+      Period: 300,
+      Statistics: ['Sum'],
+      Dimensions: [
+        { Name: 'FunctionName', Value: 'payment-service' },
+        { Name: 'Status', Value: 'success' }
+      ]
+    });
+    
+    const paymentLambdaResponse = await cloudWatchClient.send(paymentLambdaRequestsCommand);
+    if (paymentLambdaResponse.Datapoints && paymentLambdaResponse.Datapoints.length > 0) {
+      const datapoint = paymentLambdaResponse.Datapoints[0];
+      if (datapoint && datapoint.Sum !== undefined) {
+        const value = datapoint.Sum;
+        metrics.push(`lambda_requests_total{function_name="payment-service",status="success"} ${value}`);
       }
     }
     
@@ -97,7 +120,7 @@ async function generateSyntheticMetrics(): Promise<string> {
       }
     }
     
-    // Get stock reservation metrics
+    // Get stock reservation metrics for prod-001
     const stockReservationsCommand = new GetMetricStatisticsCommand({
       Namespace: 'PulseQueue',
       MetricName: 'StockReservations',
@@ -106,7 +129,8 @@ async function generateSyntheticMetrics(): Promise<string> {
       Period: 300,
       Statistics: ['Sum'],
       Dimensions: [
-        { Name: 'Status', Value: 'success' }
+        { Name: 'Status', Value: 'success' },
+        { Name: 'SKU', Value: 'prod-001' }
       ]
     });
     
@@ -117,12 +141,12 @@ async function generateSyntheticMetrics(): Promise<string> {
         const value = datapoint.Sum;
         metrics.push(`# HELP stock_reservations_total Total number of stock reservations`);
         metrics.push(`# TYPE stock_reservations_total counter`);
-        metrics.push(`stock_reservations_total{status="success",sku="TEST-SKU-001"} ${value}`);
+        metrics.push(`stock_reservations_total{status="success",sku="prod-001"} ${value}`);
       }
     }
     
-    // Get inventory operations metrics
-    const inventoryOperationsCommand = new GetMetricStatisticsCommand({
+    // Get inventory operations metrics for reserve operations
+    const inventoryReserveCommand = new GetMetricStatisticsCommand({
       Namespace: 'PulseQueue',
       MetricName: 'InventoryOperations',
       StartTime: fiveMinutesAgo,
@@ -135,14 +159,37 @@ async function generateSyntheticMetrics(): Promise<string> {
       ]
     });
     
-    const inventoryResponse = await cloudWatchClient.send(inventoryOperationsCommand);
-    if (inventoryResponse.Datapoints && inventoryResponse.Datapoints.length > 0) {
-      const datapoint = inventoryResponse.Datapoints[0];
+    const inventoryReserveResponse = await cloudWatchClient.send(inventoryReserveCommand);
+    if (inventoryReserveResponse.Datapoints && inventoryReserveResponse.Datapoints.length > 0) {
+      const datapoint = inventoryReserveResponse.Datapoints[0];
       if (datapoint && datapoint.Sum !== undefined) {
         const value = datapoint.Sum;
         metrics.push(`# HELP inventory_operations_total Total number of inventory operations`);
         metrics.push(`# TYPE inventory_operations_total counter`);
         metrics.push(`inventory_operations_total{operation_type="reserve",status="success"} ${value}`);
+      }
+    }
+    
+    // Get inventory operations metrics for decrement operations
+    const inventoryDecrementCommand = new GetMetricStatisticsCommand({
+      Namespace: 'PulseQueue',
+      MetricName: 'InventoryOperations',
+      StartTime: fiveMinutesAgo,
+      EndTime: now,
+      Period: 300,
+      Statistics: ['Sum'],
+      Dimensions: [
+        { Name: 'OperationType', Value: 'decrement_stock' },
+        { Name: 'Status', Value: 'success' }
+      ]
+    });
+    
+    const inventoryDecrementResponse = await cloudWatchClient.send(inventoryDecrementCommand);
+    if (inventoryDecrementResponse.Datapoints && inventoryDecrementResponse.Datapoints.length > 0) {
+      const datapoint = inventoryDecrementResponse.Datapoints[0];
+      if (datapoint && datapoint.Sum !== undefined) {
+        const value = datapoint.Sum;
+        metrics.push(`inventory_operations_total{operation_type="decrement_stock",status="success"} ${value}`);
       }
     }
     
