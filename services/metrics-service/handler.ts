@@ -13,6 +13,119 @@ const cloudWatchClient = new CloudWatchClient({
   region: process.env.AWS_REGION || 'eu-west-2'
 });
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+type CloudWatchDimension = { Name: string; Value: string };
+type PrometheusMetricLine = string;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Query CloudWatch for a metric sum value
+ * Handles the common pattern of building a GetMetricStatisticsCommand and processing the response
+ */
+async function getCloudWatchSum(
+  metricName: string,
+  dimensions: CloudWatchDimension[],
+  startTime: Date,
+  endTime: Date
+): Promise<number | undefined> {
+  const command = new GetMetricStatisticsCommand({
+    Namespace: 'PulseQueue',
+    MetricName: metricName,
+    StartTime: startTime,
+    EndTime: endTime,
+    Period: 300,
+    Statistics: ['Sum'],
+    Dimensions: dimensions,
+  });
+  
+  const response = await cloudWatchClient.send(command);
+  console.log(`📊 ${metricName} response:`, JSON.stringify(response, null, 2));
+  
+  const datapoint = response.Datapoints?.[0];
+  if (datapoint && datapoint.Sum !== undefined) {
+    return datapoint.Sum;
+  }
+  return undefined;
+}
+
+/**
+ * Generate Prometheus histogram buckets from CloudWatch sum data
+ * Reconstructs histogram buckets since CloudWatch only provides Sum, not bucket data
+ */
+function generateHistogramBuckets(
+  metricName: string,
+  sum: number,
+  labels: Record<string, string> = {},
+  buckets: number[] = [0.1, 0.5, 1, 2, 5, 10]
+): PrometheusMetricLine[] {
+  const lines: PrometheusMetricLine[] = [];
+  
+  // Estimate count based on typical duration (0.1-0.5 seconds)
+  const estimatedCount = Math.max(1, Math.round(sum / 0.3));
+  const averageDuration = sum / estimatedCount;
+  
+  // Build label string for the metric
+  const labelString = Object.entries(labels)
+    .map(([key, value]) => `${key}="${value}"`)
+    .join(',');
+  const labelPrefix = labelString ? `{${labelString}}` : '';
+  
+  lines.push(`# HELP ${metricName} ${metricName.replace(/_/g, ' ')}`);
+  lines.push(`# TYPE ${metricName} histogram`);
+  
+  // Generate bucket values that Prometheus expects
+  // Each bucket represents cumulative count of observations <= the bucket value
+  let cumulativeCount = 0;
+  
+  for (const bucket of buckets) {
+    // If average duration is within this bucket, all observations fall into this and higher buckets
+    if (averageDuration <= bucket) {
+      cumulativeCount = estimatedCount;
+    }
+    lines.push(`${metricName}_bucket${labelPrefix}{le="${bucket}"} ${cumulativeCount}`);
+  }
+  
+  // +Inf bucket always contains the total count
+  lines.push(`${metricName}_bucket${labelPrefix}{le="+Inf"} ${estimatedCount}`);
+  lines.push(`${metricName}_sum${labelPrefix} ${sum}`);
+  lines.push(`${metricName}_count${labelPrefix} ${estimatedCount}`);
+  
+  return lines;
+}
+
+/**
+ * Generate a simple Prometheus counter metric
+ */
+function generateCounterMetric(
+  metricName: string,
+  value: number,
+  labels: Record<string, string> = {}
+): PrometheusMetricLine[] {
+  const lines: PrometheusMetricLine[] = [];
+  
+  // Build label string for the metric
+  const labelString = Object.entries(labels)
+    .map(([key, value]) => `${key}="${value}"`)
+    .join(',');
+  const labelSuffix = labelString ? `{${labelString}}` : '';
+  
+  lines.push(`# HELP ${metricName} ${metricName.replace(/_/g, ' ')}`);
+  lines.push(`# TYPE ${metricName} counter`);
+  lines.push(`${metricName}${labelSuffix} ${value}`);
+  
+  return lines;
+}
+
+// ============================================================================
+// MAIN METRICS GENERATION
+// ============================================================================
+
 /**
  * Generate synthetic Prometheus metrics from CloudWatch data
  */
@@ -22,283 +135,163 @@ async function generateSyntheticMetrics(): Promise<string> {
   // CloudWatch has delays and data might be from earlier periods
   const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
   
-  const metrics: string[] = [];
+  const metrics: PrometheusMetricLine[] = [];
   
   try {
     console.log('🔍 Querying CloudWatch metrics from', twoHoursAgo.toISOString(), 'to', now.toISOString());
     
-    // Get Lambda request metrics from CloudWatch for order service
-    const orderLambdaRequestsCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'LambdaRequests',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    // Get Lambda request metrics for order service
+    const orderLambdaRequests = await getCloudWatchSum(
+      'LambdaRequests',
+      [
         { Name: 'FunctionName', Value: 'order-service' },
         { Name: 'Status', Value: 'success' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const orderLambdaResponse = await cloudWatchClient.send(orderLambdaRequestsCommand);
-    console.log('📊 Order Lambda response:', JSON.stringify(orderLambdaResponse, null, 2));
-    if (orderLambdaResponse.Datapoints && orderLambdaResponse.Datapoints.length > 0) {
-      const datapoint = orderLambdaResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`# HELP lambda_requests_total Total number of Lambda requests`);
-        metrics.push(`# TYPE lambda_requests_total counter`);
-        metrics.push(`lambda_requests_total{function_name="order-service",status="success"} ${value}`);
-      }
+    if (orderLambdaRequests !== undefined) {
+      metrics.push(...generateCounterMetric('lambda_requests_total', orderLambdaRequests, {
+        function_name: 'order-service',
+        status: 'success'
+      }));
     }
     
-    // Get Lambda request metrics from CloudWatch for payment service
-    const paymentLambdaRequestsCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'LambdaRequests',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    // Get Lambda request metrics for payment service
+    const paymentLambdaRequests = await getCloudWatchSum(
+      'LambdaRequests',
+      [
         { Name: 'FunctionName', Value: 'payment-service' },
         { Name: 'Status', Value: 'success' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const paymentLambdaResponse = await cloudWatchClient.send(paymentLambdaRequestsCommand);
-    console.log('📊 Payment Lambda response:', JSON.stringify(paymentLambdaResponse, null, 2));
-    if (paymentLambdaResponse.Datapoints && paymentLambdaResponse.Datapoints.length > 0) {
-      const datapoint = paymentLambdaResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`lambda_requests_total{function_name="payment-service",status="success"} ${value}`);
-      }
+    if (paymentLambdaRequests !== undefined) {
+      metrics.push(...generateCounterMetric('lambda_requests_total', paymentLambdaRequests, {
+        function_name: 'payment-service',
+        status: 'success'
+      }));
     }
     
     // Get order processing metrics
-    const ordersProcessedCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'OrdersProcessed',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    const ordersProcessed = await getCloudWatchSum(
+      'OrdersProcessed',
+      [
         { Name: 'Status', Value: 'success' },
         { Name: 'ErrorType', Value: 'none' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const ordersResponse = await cloudWatchClient.send(ordersProcessedCommand);
-    console.log('📊 Orders response:', JSON.stringify(ordersResponse, null, 2));
-    if (ordersResponse.Datapoints && ordersResponse.Datapoints.length > 0) {
-      const datapoint = ordersResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`# HELP orders_processed_total Total number of orders processed`);
-        metrics.push(`# TYPE orders_processed_total counter`);
-        metrics.push(`orders_processed_total{status="success",error_type="none"} ${value}`);
-      }
+    if (ordersProcessed !== undefined) {
+      metrics.push(...generateCounterMetric('orders_processed_total', ordersProcessed, {
+        status: 'success',
+        error_type: 'none'
+      }));
     }
     
-    // Get order processing duration metrics from CloudWatch
-    // Note: CloudWatch custom metrics only provide Sum, not bucket data for histograms
-    // We need to reconstruct histogram buckets from the sum to provide proper Prometheus format
-    const orderDurationCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'OrderProcessingDuration',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: []
-    });
+    // Get order processing duration metrics
+    const orderDuration = await getCloudWatchSum(
+      'OrderProcessingDuration',
+      [],
+      twoHoursAgo,
+      now
+    );
     
-    const orderDurationResponse = await cloudWatchClient.send(orderDurationCommand);
-    console.log('📊 Order Duration response:', JSON.stringify(orderDurationResponse, null, 2));
-    if (orderDurationResponse.Datapoints && orderDurationResponse.Datapoints.length > 0) {
-      const datapoint = orderDurationResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const sum = datapoint.Sum;
-        
-        // CloudWatch only provides Sum, not Count or bucket data for custom metrics
-        // We estimate the count based on typical order processing duration (0.1-0.5 seconds)
-        // This allows us to reconstruct a realistic histogram for Prometheus
-        const estimatedCount = Math.max(1, Math.round(sum / 0.3));
-        const averageDuration = sum / estimatedCount;
-        
-        metrics.push(`# HELP order_processing_duration_seconds Order processing duration in seconds`);
-        metrics.push(`# TYPE order_processing_duration_seconds histogram`);
-        
-        // Generate histogram bucket values that Prometheus expects
-        // Each bucket represents cumulative count of observations <= the bucket value
-        const buckets = [0.1, 0.5, 1, 2, 5, 10];
-        let cumulativeCount = 0;
-        
-        for (const bucket of buckets) {
-          // If average duration is within this bucket, all observations fall into this and higher buckets
-          if (averageDuration <= bucket) {
-            cumulativeCount = estimatedCount;
-          }
-          metrics.push(`order_processing_duration_seconds_bucket{le="${bucket}"} ${cumulativeCount}`);
-        }
-        
-        // +Inf bucket always contains the total count
-        metrics.push(`order_processing_duration_seconds_bucket{le="+Inf"} ${estimatedCount}`);
-        metrics.push(`order_processing_duration_seconds_sum ${sum}`);
-        metrics.push(`order_processing_duration_seconds_count ${estimatedCount}`);
-      }
+    if (orderDuration !== undefined) {
+      metrics.push(...generateHistogramBuckets('order_processing_duration_seconds', orderDuration));
     }
     
-    // Get Lambda duration metrics for order service from CloudWatch
-    // Similar to order processing duration, we reconstruct histogram from CloudWatch Sum data
-    const orderLambdaDurationCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'LambdaDuration',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    // Get Lambda duration metrics for order service
+    const orderLambdaDuration = await getCloudWatchSum(
+      'LambdaDuration',
+      [
         { Name: 'FunctionName', Value: 'order-service' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const orderLambdaDurationResponse = await cloudWatchClient.send(orderLambdaDurationCommand);
-    console.log('📊 Order Lambda Duration response:', JSON.stringify(orderLambdaDurationResponse, null, 2));
-    if (orderLambdaDurationResponse.Datapoints && orderLambdaDurationResponse.Datapoints.length > 0) {
-      const datapoint = orderLambdaDurationResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const sum = datapoint.Sum;
-        
-        // Estimate count based on typical Lambda execution time (0.1-0.5 seconds)
-        // This allows us to reconstruct histogram buckets for Prometheus
-        const estimatedCount = Math.max(1, Math.round(sum / 0.3));
-        const averageDuration = sum / estimatedCount;
-        
-        metrics.push(`# HELP lambda_request_duration_seconds Lambda request duration in seconds`);
-        metrics.push(`# TYPE lambda_request_duration_seconds histogram`);
-        
-        // Generate histogram bucket values for Lambda duration
-        // Each bucket represents cumulative count of Lambda executions <= the bucket value
-        const buckets = [0.1, 0.5, 1, 2, 5, 10];
-        let cumulativeCount = 0;
-        
-        for (const bucket of buckets) {
-          // If average duration is within this bucket, all executions fall into this and higher buckets
-          if (averageDuration <= bucket) {
-            cumulativeCount = estimatedCount;
-          }
-          metrics.push(`lambda_request_duration_seconds_bucket{function_name="order-service",le="${bucket}"} ${cumulativeCount}`);
-        }
-        
-        // +Inf bucket always contains the total count
-        metrics.push(`lambda_request_duration_seconds_bucket{function_name="order-service",le="+Inf"} ${estimatedCount}`);
-        metrics.push(`lambda_request_duration_seconds_sum{function_name="order-service"} ${sum}`);
-        metrics.push(`lambda_request_duration_seconds_count{function_name="order-service"} ${estimatedCount}`);
-      }
+    if (orderLambdaDuration !== undefined) {
+      metrics.push(...generateHistogramBuckets('lambda_request_duration_seconds', orderLambdaDuration, {
+        function_name: 'order-service'
+      }));
     }
     
     // Get stock reservation metrics for prod-001
-    const stockReservationsCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'StockReservations',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    const stockReservations = await getCloudWatchSum(
+      'StockReservations',
+      [
         { Name: 'Status', Value: 'success' },
         { Name: 'SKU', Value: 'prod-001' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const stockResponse = await cloudWatchClient.send(stockReservationsCommand);
-    console.log('📊 Stock Reservations response:', JSON.stringify(stockResponse, null, 2));
-    if (stockResponse.Datapoints && stockResponse.Datapoints.length > 0) {
-      const datapoint = stockResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`# HELP stock_reservations_total Total number of stock reservations`);
-        metrics.push(`# TYPE stock_reservations_total counter`);
-        metrics.push(`stock_reservations_total{status="success",sku="prod-001"} ${value}`);
-      }
+    if (stockReservations !== undefined) {
+      metrics.push(...generateCounterMetric('stock_reservations_total', stockReservations, {
+        status: 'success',
+        sku: 'prod-001'
+      }));
     }
     
     // Get inventory operations metrics for reserve operations
-    const inventoryReserveCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'InventoryOperations',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    const inventoryReserve = await getCloudWatchSum(
+      'InventoryOperations',
+      [
         { Name: 'OperationType', Value: 'reserve' },
         { Name: 'Status', Value: 'success' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const inventoryReserveResponse = await cloudWatchClient.send(inventoryReserveCommand);
-    console.log('📊 Inventory Reserve response:', JSON.stringify(inventoryReserveResponse, null, 2));
-    if (inventoryReserveResponse.Datapoints && inventoryReserveResponse.Datapoints.length > 0) {
-      const datapoint = inventoryReserveResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`# HELP inventory_operations_total Total number of inventory operations`);
-        metrics.push(`# TYPE inventory_operations_total counter`);
-        metrics.push(`inventory_operations_total{operation_type="reserve",status="success"} ${value}`);
-      }
+    if (inventoryReserve !== undefined) {
+      metrics.push(...generateCounterMetric('inventory_operations_total', inventoryReserve, {
+        operation_type: 'reserve',
+        status: 'success'
+      }));
     }
     
     // Get inventory operations metrics for decrement_stock operations
-    const inventoryDecrementStockCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'InventoryOperations',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    const inventoryDecrementStock = await getCloudWatchSum(
+      'InventoryOperations',
+      [
         { Name: 'OperationType', Value: 'decrement_stock' },
         { Name: 'Status', Value: 'success' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const inventoryDecrementStockResponse = await cloudWatchClient.send(inventoryDecrementStockCommand);
-    console.log('📊 Inventory Decrement Stock response:', JSON.stringify(inventoryDecrementStockResponse, null, 2));
-    if (inventoryDecrementStockResponse.Datapoints && inventoryDecrementStockResponse.Datapoints.length > 0) {
-      const datapoint = inventoryDecrementStockResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`inventory_operations_total{operation_type="decrement_stock",status="success"} ${value}`);
-      }
+    if (inventoryDecrementStock !== undefined) {
+      metrics.push(...generateCounterMetric('inventory_operations_total', inventoryDecrementStock, {
+        operation_type: 'decrement_stock',
+        status: 'success'
+      }));
     }
     
     // Get inventory operations metrics for decrement_reserved operations
-    const inventoryDecrementReservedCommand = new GetMetricStatisticsCommand({
-      Namespace: 'PulseQueue',
-      MetricName: 'InventoryOperations',
-      StartTime: twoHoursAgo,
-      EndTime: now,
-      Period: 300,
-      Statistics: ['Sum'],
-      Dimensions: [
+    const inventoryDecrementReserved = await getCloudWatchSum(
+      'InventoryOperations',
+      [
         { Name: 'OperationType', Value: 'decrement_reserved' },
         { Name: 'Status', Value: 'success' }
-      ]
-    });
+      ],
+      twoHoursAgo,
+      now
+    );
     
-    const inventoryDecrementReservedResponse = await cloudWatchClient.send(inventoryDecrementReservedCommand);
-    console.log('📊 Inventory Decrement Reserved response:', JSON.stringify(inventoryDecrementReservedResponse, null, 2));
-    if (inventoryDecrementReservedResponse.Datapoints && inventoryDecrementReservedResponse.Datapoints.length > 0) {
-      const datapoint = inventoryDecrementReservedResponse.Datapoints[0];
-      if (datapoint && datapoint.Sum !== undefined) {
-        const value = datapoint.Sum;
-        metrics.push(`inventory_operations_total{operation_type="decrement_reserved",status="success"} ${value}`);
-      }
+    if (inventoryDecrementReserved !== undefined) {
+      metrics.push(...generateCounterMetric('inventory_operations_total', inventoryDecrementReserved, {
+        operation_type: 'decrement_reserved',
+        status: 'success'
+      }));
     }
     
     console.log('📈 Generated metrics:', metrics);
@@ -309,6 +302,10 @@ async function generateSyntheticMetrics(): Promise<string> {
   
   return metrics.join('\n');
 }
+
+// ============================================================================
+// LAMBDA HANDLER
+// ============================================================================
 
 export const handler = async (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
