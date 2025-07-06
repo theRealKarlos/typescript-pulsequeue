@@ -519,6 +519,13 @@ Currently, the Grafana dashboard setup requires manual configuration. Future imp
   - **Fallback Mechanisms**: Implement alternative metric collection methods when CloudWatch data is unreliable
   - **Metric Reconciliation**: Compare CloudWatch data with actual business operations to identify discrepancies
 
+- **Dead Letter Queue (DLQ) Monitoring**: The current system creates DLQs for failed EventBridge events but does not monitor them. This creates a significant monitoring gap where failed events can accumulate silently. Future improvements should include:
+  - **DLQ Metrics**: Add CloudWatch metrics for DLQ message counts and age
+  - **DLQ Alerts**: Set up CloudWatch alarms for DLQ activity (messages > 0)
+  - **DLQ Dashboard**: Create dedicated dashboard panels for DLQ monitoring
+  - **DLQ Recovery**: Implement automated DLQ message processing and replay
+  - **DLQ Visibility**: Add DLQ metrics to Grafana dashboards for real-time monitoring
+
 ---
 
 ## License

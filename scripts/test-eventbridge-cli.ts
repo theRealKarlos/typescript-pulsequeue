@@ -4,9 +4,10 @@ import { execSync } from 'child_process';
 // CONFIGURATION
 // ============================================================================
 
-const EVENT_BUS_NAME = 'dev-pulsequeue-bus';
+const EVENT_BUS_NAME = 'dev-order-bus'; // Fixed: Use correct bus name
 const EVENT_SOURCE = 'order.service';
 const EVENT_DETAIL_TYPE = 'OrderPlaced';
+const AWS_REGION = process.env.AWS_REGION || 'eu-west-2';
 
 // ============================================================================
 // TEST DATA
@@ -35,11 +36,29 @@ const testOrder = {
 // ============================================================================
 // AWS CLI EVENTBRIDGE TEST
 // ============================================================================
+// 
+// USAGE:
+// 1. Ensure AWS CLI is installed and configured
+// 2. Set AWS_REGION environment variable (optional, defaults to eu-west-2)
+// 3. Run: npm run test:eventbridge
+// 4. Check CloudWatch logs for Lambda processing
+//
+// This script tests EventBridge by sending a test order event directly to the bus
+// without going through API Gateway, useful for debugging EventBridge configuration.
 
 async function testEventBridgeCLI() {
   console.log('🚀 Testing EventBridge with AWS CLI...');
   console.log('📤 Sending order to EventBridge bus:', EVENT_BUS_NAME);
+  console.log('🌍 AWS Region:', AWS_REGION);
   console.log('📦 Order data:', JSON.stringify(testOrder, null, 2));
+
+  // Validate AWS CLI availability
+  try {
+    execSync('aws --version', { stdio: 'pipe' });
+  } catch (error) {
+    console.error('❌ AWS CLI not found. Please install AWS CLI and configure credentials.');
+    process.exit(1);
+  }
 
   try {
     const command = `aws events put-events --entries '[{
@@ -47,7 +66,7 @@ async function testEventBridgeCLI() {
       "DetailType": "${EVENT_DETAIL_TYPE}",
       "EventBusName": "${EVENT_BUS_NAME}",
       "Detail": "${JSON.stringify(testOrder).replace(/"/g, '\\"')}"
-    }]' --region eu-west-2`;
+    }]' --region ${AWS_REGION}`;
 
     console.log('🔧 Executing command:', command);
 

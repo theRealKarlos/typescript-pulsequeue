@@ -625,6 +625,37 @@ The current monitoring system relies on CloudWatch custom metrics that are conve
    - Identify discrepancies between expected and actual metrics
    - Validate histogram bucket accuracy against real data
 
+### **Dead Letter Queue (DLQ) Monitoring**
+
+The current system creates DLQs for failed EventBridge events but does not monitor them. This creates a significant monitoring gap where failed events can accumulate silently. Future improvements should include:
+
+#### **Planned DLQ Enhancements**
+
+1. **DLQ Metrics Collection**
+   - Add CloudWatch metrics for DLQ message counts and age
+   - Track message visibility timeout and retention periods
+   - Monitor DLQ queue depth and processing rates
+
+2. **DLQ Alerting**
+   - Set up CloudWatch alarms for DLQ activity (messages > 0)
+   - Configure alerts for DLQ message age thresholds
+   - Implement escalation alerts for persistent DLQ issues
+
+3. **DLQ Dashboard Integration**
+   - Create dedicated dashboard panels for DLQ monitoring
+   - Add DLQ metrics to Grafana dashboards for real-time monitoring
+   - Implement DLQ health status indicators
+
+4. **DLQ Recovery Automation**
+   - Implement automated DLQ message processing and replay
+   - Create DLQ message inspection and debugging tools
+   - Add DLQ message filtering and selective replay capabilities
+
+5. **DLQ Visibility and Reporting**
+   - Add DLQ metrics to Prometheus queries
+   - Create DLQ activity reports and trend analysis
+   - Implement DLQ failure pattern recognition
+
 ### **Implementation Roadmap**
 
 1. **Phase 1**: Automated dashboard creation
@@ -633,5 +664,6 @@ The current monitoring system relies on CloudWatch custom metrics that are conve
 4. **Phase 4**: E-commerce pipeline extension
 5. **Phase 5**: Advanced analytics and BI
 6. **Phase 6**: CloudWatch metrics validation and error correction
+7. **Phase 7**: Dead Letter Queue monitoring and alerting
 
 This roadmap ensures continuous improvement while maintaining the cost-effective, lab-friendly approach that makes this monitoring solution accessible for learning and development.
