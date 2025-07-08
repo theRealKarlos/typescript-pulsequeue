@@ -55,7 +55,7 @@ async function testEventBridgeCLI() {
   // Validate AWS CLI availability
   try {
     execSync('aws --version', { stdio: 'pipe' });
-  } catch (error) {
+  } catch {
     console.error('❌ AWS CLI not found. Please install AWS CLI and configure credentials.');
     process.exit(1);
   }
