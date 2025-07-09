@@ -40,12 +40,15 @@ module "payment_eventbridge_bus" {
 # ============================================================================
 
 module "order_service" {
-  source            = "../../modules/lambda/lambda-function"
-  lambda_zip_path   = abspath("${path.module}/../../../dist/order-service.zip")
-  function_basename = "order-service-handler"
-  environment       = var.environment
-  runtime           = var.lambda_runtime
-  handler           = var.lambda_handler
+  source              = "../../modules/lambda/lambda-function"
+  lambda_zip_path     = abspath("${path.module}/../../../dist/order-service.zip")
+  function_basename   = "order-service-handler"
+  environment         = var.environment
+  runtime             = var.lambda_runtime
+  handler             = var.lambda_handler
+  timeout             = var.lambda_timeout
+  memory_size         = var.lambda_memory_size
+  enable_xray_tracing = var.enable_xray_tracing
   # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
     INVENTORY_TABLE_NAME         = module.inventory_table.table_name
@@ -55,12 +58,15 @@ module "order_service" {
 }
 
 module "payment_service" {
-  source            = "../../modules/lambda/lambda-function"
-  lambda_zip_path   = abspath("${path.module}/../../../dist/payment-service.zip")
-  function_basename = "payment-service-handler"
-  environment       = var.environment
-  runtime           = var.lambda_runtime
-  handler           = var.lambda_handler
+  source              = "../../modules/lambda/lambda-function"
+  lambda_zip_path     = abspath("${path.module}/../../../dist/payment-service.zip")
+  function_basename   = "payment-service-handler"
+  environment         = var.environment
+  runtime             = var.lambda_runtime
+  handler             = var.lambda_handler
+  timeout             = var.lambda_timeout
+  memory_size         = var.lambda_memory_size
+  enable_xray_tracing = var.enable_xray_tracing
   # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
     INVENTORY_TABLE_NAME = module.inventory_table.table_name
@@ -69,12 +75,15 @@ module "payment_service" {
 }
 
 module "metrics_service" {
-  source            = "../../modules/lambda/lambda-function"
-  lambda_zip_path   = abspath("${path.module}/../../../dist/metrics-service.zip")
-  function_basename = "metrics-service-handler"
-  environment       = var.environment
-  runtime           = var.lambda_runtime
-  handler           = var.lambda_handler
+  source              = "../../modules/lambda/lambda-function"
+  lambda_zip_path     = abspath("${path.module}/../../../dist/metrics-service.zip")
+  function_basename   = "metrics-service-handler"
+  environment         = var.environment
+  runtime             = var.lambda_runtime
+  handler             = var.lambda_handler
+  timeout             = var.lambda_timeout
+  memory_size         = var.lambda_memory_size
+  enable_xray_tracing = var.enable_xray_tracing
   # NOTE: No inventory_table_arn - Metrics service doesn't need DynamoDB access
   tags = local.tags
 }
@@ -164,10 +173,12 @@ module "eventbridge_payment_processed" {
 # ============================================================================
 
 module "inventory_table" {
-  source         = "../../modules/dynamodb/table"
-  environment    = var.environment
-  table_basename = "inventory"
-  hash_key       = "item_id"
+  source                        = "../../modules/dynamodb/table"
+  environment                   = var.environment
+  table_basename                = "inventory"
+  hash_key                      = "item_id"
+  enable_encryption_at_rest     = var.enable_encryption_at_rest
+  enable_point_in_time_recovery = var.enable_point_in_time_recovery
   attributes = [
     { name = "item_id", type = "S" }
   ]

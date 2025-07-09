@@ -18,10 +18,13 @@ resource "aws_iam_role" "lambda_exec" {
       }
     ]
   })
+
+  # Add tags for better resource management
+  tags = var.tags
 }
 
 # ============================================================================
-# EVENTBRIDGE PERMISSIONS
+# EVENTBRIDGE PERMISSIONS (LEAST PRIVILEGE)
 # ============================================================================
 
 resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
@@ -32,16 +35,23 @@ resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = "events:PutEvents"
-        Resource = "*"
+        Effect = "Allow"
+        Action = "events:PutEvents"
+        Resource = [
+          "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/Environment" = var.environment
+          }
+        }
       }
     ]
   })
 }
 
 # ============================================================================
-# CLOUDWATCH LOGGING PERMISSIONS
+# CLOUDWATCH LOGGING PERMISSIONS (LEAST PRIVILEGE)
 # ============================================================================
 
 resource "aws_iam_role_policy" "lambda_logging" {
@@ -58,14 +68,17 @@ resource "aws_iam_role_policy" "lambda_logging" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "*"
+        Resource = [
+          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.environment}-${var.function_basename}:*",
+          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.environment}-${var.function_basename}"
+        ]
       }
     ]
   })
 }
 
 # ============================================================================
-# CLOUDWATCH METRICS PERMISSIONS
+# CLOUDWATCH METRICS PERMISSIONS (LEAST PRIVILEGE)
 # ============================================================================
 
 resource "aws_iam_role_policy" "lambda_cloudwatch_metrics" {
@@ -81,6 +94,14 @@ resource "aws_iam_role_policy" "lambda_cloudwatch_metrics" {
           "cloudwatch:PutMetricData"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "cloudwatch:namespace" = [
+              "AWS/Lambda",
+              "PulseQueue/${var.environment}"
+            ]
+          }
+        }
       }
     ]
   })
@@ -101,13 +122,29 @@ resource "aws_iam_role_policy" "lambda_cloudwatch_read_metrics" {
       {
         Effect = "Allow"
         Action = [
-          "cloudwatch:GetMetricStatistics"
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "cloudwatch:namespace" = [
+              "AWS/Lambda",
+              "PulseQueue/${var.environment}"
+            ]
+          }
+        }
       }
     ]
   })
 }
+
+# ============================================================================
+# DATA SOURCES FOR LEAST PRIVILEGE POLICIES
+# ============================================================================
+
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
 
 # ============================================================================
 # DYNAMODB POLICY (MOVED TO MAIN CONFIGURATION)
