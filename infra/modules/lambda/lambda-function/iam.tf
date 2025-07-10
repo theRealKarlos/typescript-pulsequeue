@@ -38,13 +38,8 @@ resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
         Effect = "Allow"
         Action = "events:PutEvents"
         Resource = [
-          "arn:aws:events:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:event-bus/*"
+          "arn:aws:events:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:event-bus/${var.environment}-*-bus"
         ]
-        Condition = {
-          StringEquals = {
-            "aws:RequestTag/Environment" = var.environment
-          }
-        }
       }
     ]
   })
@@ -94,14 +89,6 @@ resource "aws_iam_role_policy" "lambda_cloudwatch_metrics" {
           "cloudwatch:PutMetricData"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "cloudwatch:namespace" = [
-              "AWS/Lambda",
-              "PulseQueue/${var.environment}"
-            ]
-          }
-        }
       }
     ]
   })

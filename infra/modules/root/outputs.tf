@@ -93,7 +93,7 @@ output "inventory_table_arn" {
 
 output "monitoring_cluster_name" {
   description = "Name of the monitoring ECS cluster"
-  value       = module.monitoring.cluster_name
+  value       = module.monitoring.monitoring_cluster_name
 }
 
 output "prometheus_service_name" {
@@ -151,9 +151,9 @@ output "infrastructure_summary" {
       metrics_url = module.metrics_api_gateway.api_gateway_url
     }
     monitoring = {
-      cluster_name       = module.monitoring.cluster_name
+      cluster_name       = module.monitoring.monitoring_cluster_name
       prometheus_service = module.monitoring.prometheus_service_name
       grafana_service    = module.monitoring.grafana_service_name
     }
   }
-} 
+}

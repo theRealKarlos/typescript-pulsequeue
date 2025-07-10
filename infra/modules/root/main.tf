@@ -189,7 +189,7 @@ module "eventbridge_payment_processed" {
 module "inventory_table" {
   source                        = "../dynamodb/table"
   environment                   = var.environment
-  table_basename                = "inventory"
+  table_basename                = "inventory-table"
   hash_key                      = "item_id"
   enable_encryption_at_rest     = var.enable_encryption_at_rest
   enable_point_in_time_recovery = var.enable_point_in_time_recovery
