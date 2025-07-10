@@ -8,7 +8,7 @@ if (!ENV) {
 }
 
 export const ORDER_EVENTBRIDGE_CONFIG = {
-  REGION: 'eu-west-2',
+  REGION: process.env.AWS_REGION || 'eu-west-2',
   SOURCE: 'order.service',
   DETAIL_TYPE: 'OrderPlaced',
   BUS_NAME: `${ENV}-order-bus`,
@@ -20,12 +20,12 @@ export const ORDER_EVENTBRIDGE_CONFIG = {
 export const PAYMENT_EVENTBRIDGE_CONFIG = {
   SOURCE: 'payment.service',
   DETAIL_TYPE: 'PaymentRequested',
-  REGION: 'eu-west-2',
+  REGION: process.env.AWS_REGION || 'eu-west-2',
 } as const;
 
 export const INVENTORY_DYNAMODB_CONFIG = {
   TABLE_NAME: `${ENV}-inventory-table`,
-  REGION: 'eu-west-2',
+  REGION: process.env.AWS_REGION || 'eu-west-2',
 } as const;
 
 // ============================================================================

@@ -1,9 +1,9 @@
 # ============================================================================
-# DEV ENVIRONMENT CONFIGURATION
+# STAGING ENVIRONMENT CONFIGURATION
 # ============================================================================
 #
 # This file uses the shared root module to deploy the complete infrastructure
-# stack for the dev environment. All environment-specific values are passed
+# stack for the staging environment. All environment-specific values are passed
 # via variables, making this truly environment-agnostic.
 # ============================================================================
 

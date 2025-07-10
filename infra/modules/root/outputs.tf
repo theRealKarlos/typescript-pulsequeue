@@ -1,9 +1,5 @@
 # ============================================================================
-# DEV ENVIRONMENT OUTPUTS
-# ============================================================================
-#
-# This file exposes outputs from the shared root module for the dev environment.
-# All outputs are passed through from the infrastructure module.
+# ROOT MODULE OUTPUTS - ENVIRONMENT-AGNOSTIC INFRASTRUCTURE
 # ============================================================================
 
 # ============================================================================
@@ -12,12 +8,12 @@
 
 output "vpc_id" {
   description = "ID of the VPC"
-  value       = module.infrastructure.vpc_id
+  value       = module.vpc.vpc_id
 }
 
 output "public_subnet_ids" {
   description = "IDs of the public subnets"
-  value       = module.infrastructure.public_subnet_ids
+  value       = module.vpc.public_subnet_ids
 }
 
 # ============================================================================
@@ -26,12 +22,12 @@ output "public_subnet_ids" {
 
 output "order_eventbridge_bus_name" {
   description = "Name of the order EventBridge bus"
-  value       = module.infrastructure.order_eventbridge_bus_name
+  value       = module.order_eventbridge_bus.bus_name
 }
 
 output "payment_eventbridge_bus_name" {
   description = "Name of the payment EventBridge bus"
-  value       = module.infrastructure.payment_eventbridge_bus_name
+  value       = module.payment_eventbridge_bus.bus_name
 }
 
 # ============================================================================
@@ -40,32 +36,32 @@ output "payment_eventbridge_bus_name" {
 
 output "order_service_lambda_name" {
   description = "Name of the order service Lambda function"
-  value       = module.infrastructure.order_service_lambda_name
+  value       = module.order_service.lambda_name
 }
 
 output "order_service_lambda_arn" {
   description = "ARN of the order service Lambda function"
-  value       = module.infrastructure.order_service_lambda_arn
+  value       = module.order_service.lambda_arn
 }
 
 output "payment_service_lambda_name" {
   description = "Name of the payment service Lambda function"
-  value       = module.infrastructure.payment_service_lambda_name
+  value       = module.payment_service.lambda_name
 }
 
 output "payment_service_lambda_arn" {
   description = "ARN of the payment service Lambda function"
-  value       = module.infrastructure.payment_service_lambda_arn
+  value       = module.payment_service.lambda_arn
 }
 
 output "metrics_service_lambda_name" {
   description = "Name of the metrics service Lambda function"
-  value       = module.infrastructure.metrics_service_lambda_name
+  value       = module.metrics_service.lambda_name
 }
 
 output "metrics_service_lambda_arn" {
   description = "ARN of the metrics service Lambda function"
-  value       = module.infrastructure.metrics_service_lambda_arn
+  value       = module.metrics_service.lambda_arn
 }
 
 # ============================================================================
@@ -74,7 +70,7 @@ output "metrics_service_lambda_arn" {
 
 output "metrics_api_gateway_url" {
   description = "URL of the metrics API Gateway"
-  value       = module.infrastructure.metrics_api_gateway_url
+  value       = module.metrics_api_gateway.api_gateway_url
 }
 
 # ============================================================================
@@ -83,12 +79,12 @@ output "metrics_api_gateway_url" {
 
 output "inventory_table_name" {
   description = "Name of the inventory DynamoDB table"
-  value       = module.infrastructure.inventory_table_name
+  value       = module.inventory_table.table_name
 }
 
 output "inventory_table_arn" {
   description = "ARN of the inventory DynamoDB table"
-  value       = module.infrastructure.inventory_table_arn
+  value       = module.inventory_table.table_arn
 }
 
 # ============================================================================
@@ -97,27 +93,27 @@ output "inventory_table_arn" {
 
 output "monitoring_cluster_name" {
   description = "Name of the monitoring ECS cluster"
-  value       = module.infrastructure.monitoring_cluster_name
+  value       = module.monitoring.cluster_name
 }
 
 output "prometheus_service_name" {
   description = "Name of the Prometheus ECS service"
-  value       = module.infrastructure.prometheus_service_name
+  value       = module.monitoring.prometheus_service_name
 }
 
 output "grafana_service_name" {
   description = "Name of the Grafana ECS service"
-  value       = module.infrastructure.grafana_service_name
+  value       = module.monitoring.grafana_service_name
 }
 
 output "grafana_access_instructions" {
   description = "Instructions for accessing Grafana"
-  value       = module.infrastructure.grafana_access_instructions
+  value       = module.monitoring.grafana_access_instructions
 }
 
 output "prometheus_access_instructions" {
   description = "Instructions for accessing Prometheus"
-  value       = module.infrastructure.prometheus_access_instructions
+  value       = module.monitoring.prometheus_access_instructions
 }
 
 # ============================================================================
@@ -126,7 +122,7 @@ output "prometheus_access_instructions" {
 
 output "cloudwatch_dashboard_name" {
   description = "Name of the CloudWatch dashboard"
-  value       = module.infrastructure.cloudwatch_dashboard_name
+  value       = module.cloudwatch_dashboard.dashboard_name
 }
 
 # ============================================================================
@@ -135,5 +131,29 @@ output "cloudwatch_dashboard_name" {
 
 output "infrastructure_summary" {
   description = "Summary of all deployed infrastructure"
-  value       = module.infrastructure.infrastructure_summary
-}
+  value = {
+    environment = var.environment
+    region      = var.region
+    vpc_id      = module.vpc.vpc_id
+    lambda_functions = {
+      order_service   = module.order_service.lambda_name
+      payment_service = module.payment_service.lambda_name
+      metrics_service = module.metrics_service.lambda_name
+    }
+    eventbridge_buses = {
+      order   = module.order_eventbridge_bus.bus_name
+      payment = module.payment_eventbridge_bus.bus_name
+    }
+    dynamodb_tables = {
+      inventory = module.inventory_table.table_name
+    }
+    api_gateway = {
+      metrics_url = module.metrics_api_gateway.api_gateway_url
+    }
+    monitoring = {
+      cluster_name       = module.monitoring.cluster_name
+      prometheus_service = module.monitoring.prometheus_service_name
+      grafana_service    = module.monitoring.grafana_service_name
+    }
+  }
+} 

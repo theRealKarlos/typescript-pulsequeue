@@ -28,7 +28,8 @@ variable "public_subnet_cidrs" {
 variable "availability_zones" {
   description = "Availability zones for subnets"
   type        = list(string)
-  default     = ["eu-west-2a", "eu-west-2b"]
+  # Default to eu-west-2 but can be overridden for other regions
+  default = ["eu-west-2a", "eu-west-2b"]
 }
 
 variable "tags" {
