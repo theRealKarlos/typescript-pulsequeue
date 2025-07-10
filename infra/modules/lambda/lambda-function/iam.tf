@@ -38,7 +38,7 @@ resource "aws_iam_role_policy" "lambda_eventbridge_policy" {
         Effect = "Allow"
         Action = "events:PutEvents"
         Resource = [
-          "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/*"
+          "arn:aws:events:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:event-bus/*"
         ]
         Condition = {
           StringEquals = {
@@ -69,8 +69,8 @@ resource "aws_iam_role_policy" "lambda_logging" {
           "logs:PutLogEvents"
         ]
         Resource = [
-          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.environment}-${var.function_basename}:*",
-          "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.environment}-${var.function_basename}"
+          "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.environment}-${var.function_basename}:*",
+          "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.environment}-${var.function_basename}"
         ]
       }
     ]

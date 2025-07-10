@@ -30,21 +30,7 @@ resource "aws_lambda_function" "this" {
     mode = var.enable_xray_tracing ? "Active" : "PassThrough"
   }
 
-  # Enable function URL for direct HTTP access (if needed)
-  dynamic "function_url" {
-    for_each = var.enable_function_url ? [1] : []
-    content {
-      authorization_type = "NONE"
-      cors {
-        allow_credentials = false
-        allow_origins     = ["*"]
-        allow_methods     = ["*"]
-        allow_headers     = ["*"]
-        expose_headers    = ["*"]
-        max_age           = 86400
-      }
-    }
-  }
+  # Function URL is handled separately via aws_lambda_function_url resource
 
   tags = var.tags
 }

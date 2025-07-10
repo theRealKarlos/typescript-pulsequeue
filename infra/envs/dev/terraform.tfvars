@@ -43,10 +43,3 @@ vpc_cidr_block = "10.0.0.0/16"
 enable_encryption_at_rest     = true
 enable_point_in_time_recovery = true
 
-# ============================================================================
-# MONITORING CONFIGURATION
-# ============================================================================
-
-# NOTE: Set this via environment variable or AWS Secrets Manager in production
-# grafana_admin_password = "your-secure-password-here"
-grafana_admin_password = "PulseQ2024!"
