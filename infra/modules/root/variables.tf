@@ -117,6 +117,6 @@ variable "prometheus_config" {
 }
 
 variable "dashboard_body_template" {
-  description = "CloudWatch dashboard configuration template with ${environment} and ${region} placeholders"
+  description = "CloudWatch dashboard configuration template with environment and region placeholders"
   type        = string
 }
