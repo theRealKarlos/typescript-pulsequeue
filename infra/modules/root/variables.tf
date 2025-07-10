@@ -101,15 +101,14 @@ variable "lambda_zip_paths" {
     metrics_service = string
   })
 
-  # Temporarily disabled validation to debug path issues
-  # validation {
-  #   condition = alltrue([
-  #     can(file(var.lambda_zip_paths.order_service)),
-  #     can(file(var.lambda_zip_paths.payment_service)),
-  #     can(file(var.lambda_zip_paths.metrics_service))
-  #   ])
-  #   error_message = "All Lambda zip paths must point to valid files."
-  # }
+  validation {
+    condition = alltrue([
+      can(fileexists(var.lambda_zip_paths.order_service)),
+      can(fileexists(var.lambda_zip_paths.payment_service)),
+      can(fileexists(var.lambda_zip_paths.metrics_service))
+    ])
+    error_message = "All Lambda zip paths must point to valid files."
+  }
 }
 
 variable "prometheus_config" {
