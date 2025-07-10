@@ -76,7 +76,11 @@ async function setupGrafana(config: GrafanaConfig) {
   
   // Step 2: Import pre-configured dashboard with Lambda metrics panels
   console.log('📋 Importing dashboard...');
-  const dashboardPath = path.join(__dirname, '../infra/envs/dev/grafana-dashboard.json');
+  const ENV = process.env.ENVIRONMENT;
+  if (!ENV) {
+    throw new Error('ENVIRONMENT environment variable must be set');
+  }
+  const dashboardPath = path.join(__dirname, `../infra/envs/${ENV}/grafana-dashboard.json`);
   const dashboardContent = fs.readFileSync(dashboardPath, 'utf8');
   const dashboardJson = JSON.parse(dashboardContent);
   const dashboard: Dashboard = {

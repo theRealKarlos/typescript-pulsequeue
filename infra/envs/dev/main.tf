@@ -51,6 +51,7 @@ module "order_service" {
   enable_xray_tracing = var.enable_xray_tracing
   # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
+    ENVIRONMENT                  = var.environment
     INVENTORY_TABLE_NAME         = module.inventory_table.table_name
     PAYMENT_EVENTBRIDGE_BUS_NAME = module.payment_eventbridge_bus.bus_name
   }
@@ -69,6 +70,7 @@ module "payment_service" {
   enable_xray_tracing = var.enable_xray_tracing
   # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
+    ENVIRONMENT          = var.environment
     INVENTORY_TABLE_NAME = module.inventory_table.table_name
   }
   tags = local.tags
@@ -182,7 +184,6 @@ module "inventory_table" {
   attributes = [
     { name = "item_id", type = "S" }
   ]
-  tags = local.tags
 }
 
 # ============================================================================

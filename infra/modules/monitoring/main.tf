@@ -40,7 +40,7 @@ locals {
   grafana_log_group    = "/ecs/${local.name_prefix}-grafana"
 
   # Prometheus configuration with metrics API URL substituted
-  prometheus_config_with_url = replace(var.prometheus_config, "$${metrics_api_host}", replace(replace(var.metrics_api_url, "https://", ""), "/dev/metrics", ""))
+  prometheus_config_with_url = replace(var.prometheus_config, "$${metrics_api_host}", replace(replace(var.metrics_api_url, "https://", ""), "/${var.environment}/metrics", ""))
 
   # Common task definition configuration
   task_definition_config = {

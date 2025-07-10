@@ -8,6 +8,16 @@ A modern, type-safe, event-driven serverless e-commerce application built with T
 
 ---
 
+## Environment-Agnostic Deployment
+
+- **Strict Environment Variable Requirement:** All scripts and Lambda code require the `ENVIRONMENT` environment variable to be set. If not set, deployment and tests will fail fast.
+- **No Fallbacks:** There is no default to `dev`—the environment must be explicitly specified for every deployment, test, or script run.
+- **Terraform State Isolation:** Each environment (dev, staging, prod, etc.) has its own `backend.tf` file with a hardcoded S3 key for state isolation. Variables are not used in the backend block.
+- **Lambda Environment Variables:** The `ENVIRONMENT` variable is injected into all Lambda functions via Terraform, ensuring dynamic resource naming and true environment agnosticism.
+- **Deployment Script:** The `deploy.ts` script requires `--env` to be specified and propagates the environment variable to all build, test, and deployment steps.
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -431,33 +441,24 @@ interface OrderEvent {
 
 ## Best Practices
 
-### TypeScript Best Practices
+- **Type Safety**: All handlers and scripts are fully type-safe (no `any`)
+- **Centralized Configuration**: All config in `services/shared/constants.ts`
+- **Environment-Aware Resource Naming**: All AWS resources are named with environment prefixes (e.g., `dev-inventory-table`)
+- **Infrastructure as Code**: All AWS resources managed via Terraform modules
+- **Testing**: Robust unit and integration tests, with inventory reset and log assertions
+- **Code Quality**: ESLint enforced, no explicit `any` allowed
 
-- **Strict Type Checking**: No `any` types, comprehensive type definitions
-- **Input Validation**: Type guards for all external data
-- **Error Handling**: Proper error boundaries and logging
-- **Code Organization**: Modular structure with clear separation of concerns
+---
 
-### AWS Best Practices
+## Planned DevOps Improvements
 
-- **Serverless First**: Leverage managed services where possible
-- **Event-Driven Architecture**: Decoupled services via EventBridge
-- **Security by Design**: IAM least privilege, encryption at rest
-- **Monitoring & Observability**: Comprehensive metrics and logging
-
-### Terraform Best Practices
-
-- **Modular Design**: Reusable modules for common patterns
-- **Environment Isolation**: Separate configurations per environment
-- **State Management**: Remote state with locking
-- **Validation**: Input validation and format checking
-
-### DevOps Best Practices
-
-- **CI/CD Pipeline**: Automated testing and deployment
-- **Infrastructure as Code**: Version-controlled infrastructure
-- **Security Scanning**: Automated vulnerability detection
-- **Monitoring**: Real-time observability and alerting
+- **CI/CD Automation:** A GitHub Actions workflow will be added to fully automate deployments for staging and production environments, replacing the current `deploy.ts` script for those environments. This will ensure robust, auditable, and team-friendly deployments.
+- **Multi-Environment Support:** Additional environment directories and backend files for `staging` and `prod` will be created, following the same strict environment isolation and state management as `dev`.
+- **Strict Environment Propagation:** All scripts, Lambdas, and infrastructure will continue to require explicit environment specification—no fallbacks—ensuring safe, environment-agnostic deployments.
+- **Advanced Security:** Plans include AWS WAF integration, VPC endpoints, and enhanced IAM policies for production.
+- **Performance Optimization:** Lambda provisioned concurrency, DynamoDB auto-scaling, and CDN integration are on the roadmap.
+- **Enhanced Monitoring:** Custom CloudWatch dashboards, advanced alerting, and cost optimization monitoring will be expanded.
+- **Developer Experience:** Improvements such as local development environment, hot reloading, and enhanced debugging tools are planned.
 
 ---
 
