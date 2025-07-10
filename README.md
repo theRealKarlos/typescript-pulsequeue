@@ -2,6 +2,20 @@
 
 A modern, type-safe, event-driven serverless e-commerce application built with TypeScript, AWS Lambda, EventBridge, DynamoDB, and comprehensive monitoring. This project demonstrates best practices for scalable, decoupled architectures, robust testing, infrastructure-as-code, and observability.
 
+**⚠️ Disclaimer:** This is a lab project designed to demonstrate production-ready patterns and best practices. While every effort has been made to follow industry standards and ensure robustness, **no guarantees are given for actual production use**. Users should thoroughly review, test, and adapt the code and infrastructure to their own requirements before deploying in a real-world environment.
+
+**🚀 Production-Ready (Aspirational):** The aim of this project is to be as close to production-ready as possible for educational and demonstration purposes.
+
+---
+
+## Environment-Agnostic Deployment
+
+- **Strict Environment Variable Requirement:** All scripts and Lambda code require the `ENVIRONMENT` environment variable to be set. If not set, deployment and tests will fail fast.
+- **No Fallbacks:** There is no default to `dev`—the environment must be explicitly specified for every deployment, test, or script run.
+- **Terraform State Isolation:** Each environment (dev, staging, prod, etc.) has its own `backend.tf` file with a hardcoded S3 key for state isolation. Variables are not used in the backend block.
+- **Lambda Environment Variables:** The `ENVIRONMENT` variable is injected into all Lambda functions via Terraform, ensuring dynamic resource naming and true environment agnosticism.
+- **Deployment Script:** The `deploy.ts` script requires `--env` to be specified and propagates the environment variable to all build, test, and deployment steps.
+
 ---
 
 ## Table of Contents
@@ -408,6 +422,18 @@ TypeScript-PulseQueue/
 - **Infrastructure as Code**: All AWS resources managed via Terraform modules
 - **Testing**: Robust unit and integration tests, with inventory reset and log assertions
 - **Code Quality**: ESLint enforced, no explicit `any` allowed
+
+---
+
+## Planned DevOps Improvements
+
+- **CI/CD Automation:** A GitHub Actions workflow will be added to fully automate deployments for staging and production environments, replacing the current `deploy.ts` script for those environments. This will ensure robust, auditable, and team-friendly deployments.
+- **Multi-Environment Support:** Additional environment directories and backend files for `staging` and `prod` will be created, following the same strict environment isolation and state management as `dev`.
+- **Strict Environment Propagation:** All scripts, Lambdas, and infrastructure will continue to require explicit environment specification—no fallbacks—ensuring safe, environment-agnostic deployments.
+- **Advanced Security:** Plans include AWS WAF integration, VPC endpoints, and enhanced IAM policies for production.
+- **Performance Optimization:** Lambda provisioned concurrency, DynamoDB auto-scaling, and CDN integration are on the roadmap.
+- **Enhanced Monitoring:** Custom CloudWatch dashboards, advanced alerting, and cost optimization monitoring will be expanded.
+- **Developer Experience:** Improvements such as local development environment, hot reloading, and enhanced debugging tools are planned.
 
 ---
 

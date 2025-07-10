@@ -2,14 +2,19 @@
 // SHARED EVENTBRIDGE CONSTANTS
 // ============================================================================
 
+const ENV = process.env.ENVIRONMENT;
+if (!ENV) {
+  throw new Error('ENVIRONMENT environment variable must be set');
+}
+
 export const ORDER_EVENTBRIDGE_CONFIG = {
   REGION: 'eu-west-2',
   SOURCE: 'order.service',
   DETAIL_TYPE: 'OrderPlaced',
-  BUS_NAME: 'dev-order-bus',
-  ORDER_LAMBDA_LOG_GROUP: '/aws/lambda/dev-order-service-handler',
-  PAYMENT_LAMBDA_LOG_GROUP: '/aws/lambda/dev-payment-service-handler',
-  INVENTORY_TABLE_NAME: 'dev-inventory-table',
+  BUS_NAME: `${ENV}-order-bus`,
+  ORDER_LAMBDA_LOG_GROUP: `/aws/lambda/${ENV}-order-service-handler`,
+  PAYMENT_LAMBDA_LOG_GROUP: `/aws/lambda/${ENV}-payment-service-handler`,
+  INVENTORY_TABLE_NAME: `${ENV}-inventory-table`,
 } as const;
 
 export const PAYMENT_EVENTBRIDGE_CONFIG = {
@@ -19,7 +24,7 @@ export const PAYMENT_EVENTBRIDGE_CONFIG = {
 } as const;
 
 export const INVENTORY_DYNAMODB_CONFIG = {
-  TABLE_NAME: 'dev-inventory-table',
+  TABLE_NAME: `${ENV}-inventory-table`,
   REGION: 'eu-west-2',
 } as const;
 

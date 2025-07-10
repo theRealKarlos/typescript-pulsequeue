@@ -4,7 +4,11 @@ import { execSync } from 'child_process';
 // CONFIGURATION
 // ============================================================================
 
-const EVENT_BUS_NAME = 'dev-order-bus'; // Fixed: Use correct bus name
+const ENV = process.env.ENVIRONMENT;
+if (!ENV) {
+  throw new Error('ENVIRONMENT environment variable must be set');
+}
+const EVENT_BUS_NAME = `${ENV}-order-bus`; // Use correct bus name
 const EVENT_SOURCE = 'order.service';
 const EVENT_DETAIL_TYPE = 'OrderPlaced';
 const AWS_REGION = process.env.AWS_REGION || 'eu-west-2';

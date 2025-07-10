@@ -46,8 +46,8 @@ module "order_service" {
   environment       = var.environment
   runtime           = var.lambda_runtime
   handler           = var.lambda_handler
-  # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
+    ENVIRONMENT                  = var.environment
     INVENTORY_TABLE_NAME         = module.inventory_table.table_name
     PAYMENT_EVENTBRIDGE_BUS_NAME = module.payment_eventbridge_bus.bus_name
   }
@@ -61,8 +61,8 @@ module "payment_service" {
   environment       = var.environment
   runtime           = var.lambda_runtime
   handler           = var.lambda_handler
-  # NOTE: inventory_table_arn removed - DynamoDB policies handled separately
   environment_variables = {
+    ENVIRONMENT          = var.environment
     INVENTORY_TABLE_NAME = module.inventory_table.table_name
   }
   tags = local.tags
@@ -75,7 +75,9 @@ module "metrics_service" {
   environment       = var.environment
   runtime           = var.lambda_runtime
   handler           = var.lambda_handler
-  # NOTE: No inventory_table_arn - Metrics service doesn't need DynamoDB access
+  environment_variables = {
+    ENVIRONMENT = var.environment
+  }
   tags = local.tags
 }
 
@@ -171,7 +173,6 @@ module "inventory_table" {
   attributes = [
     { name = "item_id", type = "S" }
   ]
-  tags = local.tags
 }
 
 # ============================================================================
