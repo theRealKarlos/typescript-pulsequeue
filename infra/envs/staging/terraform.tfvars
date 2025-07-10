@@ -37,4 +37,4 @@ vpc_cidr_block = "10.1.0.0/16" # Different CIDR for staging
 # ============================================================================
 
 enable_encryption_at_rest     = true
-enable_point_in_time_recovery = true 
+enable_point_in_time_recovery = true

@@ -88,4 +88,4 @@ resource "aws_api_gateway_stage" "this" {
   stage_name    = var.environment
 
   tags = var.tags
-} 
+}
