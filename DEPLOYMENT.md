@@ -137,199 +137,333 @@ aws events list-event-buses --region eu-west-2
 aws dynamodb describe-table --table-name dev-inventory --region eu-west-2
 ```
 
-## 🔄 CI/CD Pipeline Deployment
+## 🔄 **Environment-Agnostic Deployment**
 
-### GitHub Actions Setup
+### **🎯 Deployment Strategy**
 
-1. **Repository Secrets**:
-   - `AWS_ACCESS_KEY_ID`: Your AWS access key
-   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
-   - `GRAFANA_ADMIN_PASSWORD`: Grafana admin password
+This project uses a **two-tier deployment approach**:
 
-2. **Pipeline Triggers**:
-   - Push to `main` branch: Full deployment
-   - Push to `develop` branch: Testing only
-   - Pull requests: Validation and testing
+#### **1. Development Environment (Manual)**
 
-### Pipeline Stages
+- **Purpose**: Local development, testing, and experimentation
+- **Method**: Direct deployment using `deploy.ts` script
+- **Usage**: `npm run deploy -- --env=dev`
 
-1. **Code Quality**:
-   - ESLint validation
-   - TypeScript compilation
-   - Unit tests
-   - Security audit
+#### **2. Staging & Production (Automated CI/CD)**
 
-2. **Infrastructure Validation**:
-   - Terraform format check
-   - Terraform validation
-   - Terraform plan (dry run)
+- **Purpose**: Pre-production testing and live production
+- **Method**: GitHub Actions with branch-based triggers
+- **Intended Workflow**:
+  - Push to `release*` branch → **Auto-deploy to staging**
+  - Push to `main` branch → **Manual approval required for production**
 
-3. **Security Scanning**:
-   - Trivy vulnerability scan
-   - Dependency analysis
-   - Code security review
+### **Automated Deployment Pipeline**
 
-4. **Deployment** (Main branch only):
-   - Build Lambda packages
-   - Terraform apply
-   - Post-deployment tests
-   - Monitoring setup
-
-## 🔍 Monitoring and Observability
-
-### CloudWatch Dashboards
-
-- **Lambda Metrics**: Invocations, errors, duration
-- **EventBridge Metrics**: Event processing, failures
-- **DynamoDB Metrics**: Read/write capacity, throttling
-- **Custom Metrics**: Business-specific KPIs
-
-### Grafana Dashboards
-
-- **Application Overview**: End-to-end system health
-- **Performance Metrics**: Response times, throughput
-- **Error Tracking**: Error rates, failure patterns
-- **Business Metrics**: Order processing, inventory levels
-
-### Alerting
-
-```yaml
-# Example CloudWatch Alarms
-- High Error Rate: > 5% error rate
-- High Latency: > 30 seconds response time
-- Low Inventory: < 10 items in stock
-- EventBridge Failures: > 0 failed events
-```
-
-## 🛡️ Security Considerations
-
-### Secrets Management
+The project includes a **completely environment-agnostic deployment script** that handles all environments consistently:
 
 ```bash
-# Use AWS Secrets Manager for production
-aws secretsmanager create-secret \
-  --name "pulsequeue/grafana-password" \
-  --secret-string "your-secure-password"
+# Deploy to development (intended for local development)
+npm run deploy -- --env=dev
 
-# Reference in Terraform
-data "aws_secretsmanager_secret" "grafana_password" {
-  name = "pulsequeue/grafana-password"
+# Deploy to staging (for testing deployment scripts only)
+npm run deploy -- --env=staging
+
+# Deploy to production (for testing deployment scripts only)
+npm run deploy -- --env=prod
+```
+
+**⚠️ Important**: The `deploy.ts` script supports staging and production environments for **completeness and testing purposes only**. The intended deployment method for staging and production is via **GitHub Actions CI/CD pipeline**.
+
+### **Intended CI/CD Workflow**
+
+#### **For Staging Deployment**:
+
+```bash
+# Create a release branch
+git checkout -b release/v1.2.3
+
+# Make your changes
+git add .
+git commit -m "Release v1.2.3"
+
+# Push to trigger staging deployment
+git push origin release/v1.2.3
+# → Automatically deploys to staging environment
+```
+
+#### **For Production Deployment**:
+
+```bash
+# Merge release branch to master
+git checkout master
+git merge release/v1.2.3
+
+# Push to trigger production deployment (requires manual approval)
+git push origin master
+# → Requires manual approval for production deployment
+```
+
+### **Branch Naming Convention**
+
+- `release*` branches → **Auto-deploy to staging**
+- `master` branch → **Manual approval for production**
+
+### **Deployment Pipeline Steps**
+
+The automated pipeline includes:
+
+1. **Code Quality Check** (ESLint)
+2. **Unit Tests** (Jest)
+3. **Lambda Build** (esbuild)
+4. **Terraform Plan**
+5. **Terraform Apply**
+6. **Post-Deploy Tests**
+
+### **Environment-Specific Scripts**
+
+All environments have dedicated npm scripts:
+
+```bash
+# Development (intended for local development)
+npm run deploy:dev
+npm run plan:dev
+npm run apply:dev
+npm run postdeploy:dev
+
+# Staging (for testing deployment scripts only)
+npm run deploy:staging
+npm run plan:staging
+npm run apply:staging
+npm run postdeploy:staging
+
+# Production (for testing deployment scripts only)
+npm run deploy:prod
+npm run plan:prod
+npm run apply:prod
+npm run postdeploy:prod
+```
+
+### **Environment Variables**
+
+The deployment automatically sets environment variables:
+
+- `ENVIRONMENT`: `dev`, `staging`, or `prod`
+- `AWS_REGION`: `eu-west-2` (or configured region)
+
+## 📋 **Environment Configuration**
+
+### **Development (`dev/`)**
+
+- **Purpose**: Local development and testing
+- **Settings**: Lower resources, faster deployments
+- **CIDR**: `10.0.0.0/16`
+- **Lambda Memory**: 256MB
+- **Lambda Timeout**: 30s
+
+### **Staging (`staging/`)**
+
+- **Purpose**: Pre-production testing
+- **Settings**: Production-like configuration
+- **CIDR**: `10.1.0.0/16`
+- **Lambda Memory**: 512MB
+- **Lambda Timeout**: 60s
+
+### **Production (`prod/`)**
+
+- **Purpose**: Live production environment
+- **Settings**: High-performance configuration
+- **CIDR**: `10.2.0.0/16`
+- **Lambda Memory**: 1024MB
+- **Lambda Timeout**: 60s
+
+## 🔧 **Adding a New Environment**
+
+To add a new environment (e.g., `test`):
+
+1. **Create environment directory**:
+
+   ```bash
+   mkdir infra/envs/test
+   ```
+
+2. **Copy base files**:
+
+   ```bash
+   cp infra/envs/dev/* infra/envs/test/
+   ```
+
+3. **Update configuration**:
+   - Edit `terraform.tfvars` with environment-specific values
+   - Update `backend.tf` with correct state key
+   - Update `main.tf` if needed (usually not required)
+
+4. **Deploy**:
+   ```bash
+   cd infra/envs/test
+   terraform init
+   terraform apply -var-file=terraform.tfvars
+   ```
+
+## 🏗️ **Infrastructure Components**
+
+The shared root module deploys:
+
+### **Networking**
+
+- VPC with public subnets
+- Security groups
+- Internet Gateway
+
+### **Compute**
+
+- Lambda functions (order, payment, metrics services)
+- API Gateway for metrics endpoint
+
+### **Data**
+
+- DynamoDB inventory table
+- EventBridge buses (order, payment)
+
+### **Monitoring**
+
+- Prometheus for metrics collection
+- Grafana for visualization
+- CloudWatch dashboards with **template-based configuration**
+
+### **Security**
+
+- IAM roles and policies
+- Encryption at rest
+- Point-in-time recovery
+
+## 📊 **Template-Based Dashboard Configuration**
+
+### **Environment-Agnostic Dashboard Templates**
+
+The dashboard configuration uses **template substitution** to automatically adapt to each environment:
+
+```json
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/Lambda", "Invocations", "FunctionName", "${environment}-order-service-handler"],
+          [".", "Errors", ".", "."]
+        ],
+        "region": "${region}",
+        "title": "Order Lambda Invocations & Errors"
+      }
+    }
+  ]
 }
 ```
 
-### Network Security
+### **Automatic Substitution**
 
-- **VPC Configuration**: Private subnets for monitoring
-- **Security Groups**: Minimal required access
-- **NACLs**: Additional network layer security
-- **VPC Endpoints**: Private AWS service access
+The root module automatically replaces:
 
-### IAM Best Practices
+- `${environment}` → `dev`, `staging`, or `prod`
+- `${region}` → `eu-west-2` (or configured region)
 
-- **Least Privilege**: Minimal required permissions
-- **Role-Based Access**: Environment-specific roles
-- **Temporary Credentials**: Use AWS STS for CI/CD
-- **Cross-Account Access**: Proper trust relationships
+This ensures that:
 
-## 🔄 Environment Management
+- ✅ **No hardcoded environment names** in dashboard configuration
+- ✅ **Consistent dashboard structure** across environments
+- ✅ **Automatic resource name adaptation** per environment
+- ✅ **Single dashboard template** for all environments
 
-### Development Environment
+## 🔍 **State Management**
 
-```bash
-# Deploy to dev
-cd infra/envs/dev
-terraform apply -var-file=terraform.tfvars
-```
+Each environment has its own Terraform state file:
 
-### Staging Environment
+- **Development**: `envs/dev/terraform.tfstate`
+- **Staging**: `envs/staging/terraform.tfstate`
+- **Production**: `envs/prod/terraform.tfstate`
 
-```bash
-# Create staging configuration
-cp infra/envs/dev infra/envs/staging
-# Modify terraform.tfvars for staging
-terraform apply -var-file=staging.tfvars
-```
+This ensures complete isolation between environments and prevents accidental cross-environment deployments.
 
-### Production Environment
+## 🛡️ **Security Considerations**
 
-```bash
-# Production deployment with additional security
-cd infra/envs/prod
-terraform apply -var-file=prod.tfvars
-```
+### **Secrets Management**
 
-## 🚨 Troubleshooting
+- **Grafana passwords** via environment variables
+- **No hardcoded secrets** in configuration
+- **Sensitive variables** properly marked
 
-### Common Issues
+### **Network Security**
 
-1. **Terraform State Lock**:
+- **VPC isolation** per environment
+- **Security groups** with minimal required access
+- **Encryption** enabled for all data
 
-   ```bash
-   terraform force-unlock <lock-id>
-   ```
+### **Access Control**
 
-2. **Lambda Deployment Issues**:
+- **IAM least privilege** principles
+- **Environment-specific roles**
+- **Proper resource tagging**
 
-   ```bash
-   # Check Lambda logs
-   aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/dev-"
-   ```
+## 📊 **Monitoring and Observability**
 
-3. **EventBridge Rule Issues**:
+### **Infrastructure Monitoring**
 
-   ```bash
-   # Test event routing
-   aws events test-event-pattern --event-pattern file://pattern.json --event file://event.json
-   ```
+- **CloudWatch dashboards** for AWS resources
+- **Custom metrics** via Lambda functions
+- **Log aggregation** and analysis
 
-4. **DynamoDB Access Issues**:
-   ```bash
-   # Verify table permissions
-   aws dynamodb describe-table --table-name dev-inventory
-   ```
+### **Application Monitoring**
 
-### Rollback Procedures
+- **Prometheus** for application metrics
+- **Grafana** for visualization
+- **X-Ray tracing** for distributed tracing
 
-```bash
-# Infrastructure rollback
-terraform plan -var-file=terraform.tfvars -destroy
-terraform apply -var-file=terraform.tfvars
+## 🔄 **CI/CD Integration**
 
-# Application rollback
-# Deploy previous Lambda version
-aws lambda update-function-code --function-name dev-order-service-handler --zip-file fileb://previous.zip
-```
+The infrastructure is designed to work seamlessly with CI/CD pipelines:
 
-## 📊 Performance Optimization
+- **Environment-agnostic deployment** scripts
+- **Automated testing** post-deployment
+- **Rollback capabilities** via Terraform
+- **State locking** for concurrent deployments
 
-### Lambda Optimization
+## 📚 **Best Practices Followed**
 
-- **Memory Allocation**: Optimize based on workload
-- **Timeout Configuration**: Balance between cost and reliability
-- **Cold Start Mitigation**: Provisioned concurrency for critical functions
-- **Code Optimization**: Minimize bundle size
+1. **DRY Principle**: No code duplication
+2. **Environment Isolation**: Separate state files
+3. **Modular Design**: Reusable components
+4. **Security First**: Encryption and IAM best practices
+5. **Monitoring**: Comprehensive observability
+6. **Documentation**: Clear and comprehensive
+7. **Validation**: Input validation on all variables
+8. **Tagging**: Consistent resource tagging strategy
+9. **Template-Based Configuration**: Environment-agnostic dashboard templates
 
-### DynamoDB Optimization
+## 🎯 **Deployment Strategy Summary**
 
-- **Read/Write Capacity**: Monitor and adjust as needed
-- **Indexing Strategy**: Optimize for query patterns
-- **Partition Key Design**: Even distribution of data
-- **TTL Configuration**: Automatic cleanup of old data
+### **Development Environment**
 
-### Monitoring Optimization
+- ✅ **Manual deployment** using `deploy.ts` script
+- ✅ **Local development** and testing
+- ✅ **Direct control** over deployment process
 
-- **Metric Retention**: Configure appropriate retention periods
-- **Log Aggregation**: Centralized logging strategy
-- **Alert Thresholds**: Fine-tune based on business requirements
-- **Cost Monitoring**: Track AWS resource costs
+### **Staging Environment**
 
-## 📚 Additional Resources
+- ✅ **Automated deployment** via GitHub Actions
+- ✅ **Triggered by** `release*` branch pushes
+- ✅ **Pre-production testing** and validation
 
-- [AWS Lambda Best Practices](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html)
-- [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
-- [EventBridge Best Practices](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-best-practices.html)
-- [DynamoDB Best Practices](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices.html)
+### **Production Environment**
 
----
+- ✅ **Automated deployment** via GitHub Actions
+- ✅ **Triggered by** `main` branch pushes
+- ✅ **Manual approval** required for safety
+- ✅ **Production-grade** security and monitoring
 
-**Note**: This deployment guide should be updated as the application evolves and new best practices emerge.
+This deployment system provides a **production-ready, maintainable, and scalable** deployment foundation that follows industry best practices and can easily accommodate future growth and changes.
+
+## 🔗 **Related Documentation**
+
+- **[GITHUB_SETUP.md](./GITHUB_SETUP.md)**: Complete guide for setting up GitHub Actions with manual approval
+- **[MONITORING.md](./MONITORING.md)**: Monitoring and observability configuration
+- **[SECURITY.md](./SECURITY.md)**: Security best practices and considerations

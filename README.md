@@ -212,12 +212,34 @@ aws configure
 
 ## Deployment
 
-### TypeScript Deployment Pipeline
+### 🎯 **Deployment Strategy**
 
-Run the full deployment pipeline:
+This project uses a **two-tier deployment approach**:
+
+#### **1. Development Environment (Manual)**
+
+- **Purpose**: Local development, testing, and experimentation
+- **Method**: Direct deployment using `deploy.ts` script
+- **Usage**: `npm run deploy -- --env=dev`
+
+#### **2. Staging & Production (Automated CI/CD)**
+
+- **Purpose**: Pre-production testing and live production
+- **Method**: GitHub Actions with branch-based triggers
+- **Intended Workflow**:
+  - Push to `release*` branch → **Auto-deploy to staging**
+  - Push to `main` branch → **Manual approval required for production**
+
+### **Development Deployment**
+
+For local development and testing:
 
 ```bash
-npm run deploy:dev:ts
+# Deploy to development environment
+npm run deploy -- --env=dev
+
+# Or use the shortcut
+npm run deploy:dev
 ```
 
 This will:
@@ -229,22 +251,54 @@ This will:
 5. Run the post-deploy integration test
 6. Set up monitoring infrastructure (Prometheus & Grafana)
 
+### **Staging & Production Deployment**
+
+**⚠️ Important**: The `deploy.ts` script supports staging and production environments for **completeness and testing purposes only**. The intended deployment method for staging and production is via **GitHub Actions CI/CD pipeline**.
+
+#### **Intended CI/CD Workflow**:
+
+```bash
+# For staging deployment
+git checkout -b release/v1.2.3
+git push origin release/v1.2.3
+# → Automatically deploys to staging environment
+
+# For production deployment
+git checkout master
+git merge release/v1.2.3
+git push origin master
+# → Requires manual approval for production deployment
+```
+
+#### **Branch Naming Convention**:
+
+- `release*` branches → **Auto-deploy to staging**
+- `master` branch → **Manual approval for production**
+
+#### **Manual Deployment (For Testing)**:
+
+```bash
+# Only use these for testing the deployment scripts
+npm run deploy -- --env=staging  # Testing only
+npm run deploy -- --env=prod     # Testing only
+```
+
 For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ---
 
 ## CI/CD Pipeline
 
-### Automated Pipeline Features
+### **Automated Pipeline Features**
 
 - **Code Quality**: ESLint, TypeScript compilation, unit tests
 - **Security Scanning**: Trivy vulnerability scanning, dependency audits
 - **Infrastructure Validation**: Terraform format check, validation, plan review
-- **Automated Deployment**: Build, test, and deploy on main branch
+- **Automated Deployment**: Build, test, and deploy on master branch
 - **Post-Deployment Testing**: Integration tests after deployment
 - **Security Notifications**: Alert on security issues
 
-### Pipeline Stages
+### **Pipeline Stages**
 
 1. **Code Quality & Testing**
    - ESLint validation
@@ -262,13 +316,40 @@ For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
    - Dependency analysis
    - Code security review
 
-4. **Deployment** (Main branch only)
+4. **Deployment** (Master branch only)
    - Build Lambda packages
    - Terraform apply
    - Post-deployment tests
    - Monitoring setup
 
+### **Branch-Based Deployment Strategy**
+
+#### **Development Branch** (`development`, `feature/*`)
+
+- ✅ **Code Quality Checks**: ESLint, TypeScript, unit tests
+- ✅ **Security Scanning**: Vulnerability checks, dependency audits
+- ✅ **Infrastructure Validation**: Terraform plan (dry run)
+- ❌ **No Deployment**: Only validation and testing
+
+#### **Release Branch** (`release*`)
+
+- ✅ **All Development Checks**: Code quality, security, validation
+- ✅ **Staging Deployment**: Automatic deployment to staging environment
+- ✅ **Post-Deploy Tests**: Integration tests on staging
+- ❌ **No Production Deployment**: Staging only
+
+#### **Master Branch** (`master`)
+
+- ✅ **All Previous Checks**: Code quality, security, validation
+- ✅ **Production Deployment**: Manual approval required
+- ✅ **Production Tests**: Post-deploy tests on production
+- ✅ **Monitoring Setup**: Production monitoring configuration
+
 For detailed CI/CD configuration, see [.github/workflows/ci-cd.yml](./.github/workflows/ci-cd.yml).
+
+For GitHub Actions setup and manual approval configuration, see [GITHUB_SETUP.md](./GITHUB_SETUP.md).
+
+For detailed branch strategy and workflow, see [BRANCH_STRATEGY.md](./BRANCH_STRATEGY.md).
 
 ---
 

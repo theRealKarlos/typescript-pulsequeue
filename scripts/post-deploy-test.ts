@@ -4,34 +4,42 @@ import * as path from 'path';
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { CloudWatchLogsClient, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
-import { ORDER_EVENTBRIDGE_CONFIG } from '../services/shared/constants';
 import { execSync } from 'child_process';
 
 // ============================================================================
-// CONFIGURATION
+// ENVIRONMENT-AGNOSTIC CONFIGURATION
 // ============================================================================
 
-const DEFAULT_REGION = ORDER_EVENTBRIDGE_CONFIG.REGION;
-const ORDER_EVENT_SOURCE = ORDER_EVENTBRIDGE_CONFIG.SOURCE;
-const ORDER_EVENT_DETAIL_TYPE = ORDER_EVENTBRIDGE_CONFIG.DETAIL_TYPE;
-const ORDER_EVENT_BUS_NAME = ORDER_EVENTBRIDGE_CONFIG.BUS_NAME;
-const ORDER_EVENT_LOG_GROUP = ORDER_EVENTBRIDGE_CONFIG.ORDER_LAMBDA_LOG_GROUP;
-const PAYMENT_EVENT_LOG_GROUP = ORDER_EVENTBRIDGE_CONFIG.PAYMENT_LAMBDA_LOG_GROUP;
-const INVENTORY_TABLE_NAME = ORDER_EVENTBRIDGE_CONFIG.INVENTORY_TABLE_NAME;
-const region = process.env.AWS_REGION || DEFAULT_REGION;
+// Get environment from environment variable (set by npm scripts)
+const ENVIRONMENT = process.env.ENVIRONMENT;
+if (!ENVIRONMENT) {
+  throw new Error('ENVIRONMENT environment variable is required (e.g., dev, staging, prod)');
+}
+
+const AWS_REGION = process.env.AWS_REGION || 'eu-west-2';
+
+// Environment-specific resource names
+const ORDER_EVENT_SOURCE = 'order.service';
+const ORDER_EVENT_DETAIL_TYPE = 'OrderPlaced';
+const ORDER_EVENT_BUS_NAME = `${ENVIRONMENT}-order-bus`;
+const ORDER_EVENT_LOG_GROUP = `/aws/lambda/${ENVIRONMENT}-order-service-handler`;
+const PAYMENT_EVENT_LOG_GROUP = `/aws/lambda/${ENVIRONMENT}-payment-service-handler`;
+const INVENTORY_TABLE_NAME = `${ENVIRONMENT}-inventory-table`;
+
+console.log('Environment:', ENVIRONMENT);
+console.log('Region:', AWS_REGION);
+console.log('Order log group:', ORDER_EVENT_LOG_GROUP);
+console.log('Payment log group:', PAYMENT_EVENT_LOG_GROUP);
+console.log('Inventory table:', INVENTORY_TABLE_NAME);
 
 const eventsJsonPath = path.resolve(__dirname, 'order-service-events.json');
 const allTestEvents = JSON.parse(fs.readFileSync(eventsJsonPath, 'utf-8'));
 
 const testSku = allTestEvents.success.items[0].sku;
 
-const eventBridgeClient = new EventBridgeClient({ region });
-const logsClient = new CloudWatchLogsClient({ region });
-const dynamoClient = new DynamoDBClient({ region });
-
-console.log('Order log group:', ORDER_EVENT_LOG_GROUP);
-console.log('Payment log group:', PAYMENT_EVENT_LOG_GROUP);
-console.log('Region:', region);
+const eventBridgeClient = new EventBridgeClient({ region: AWS_REGION });
+const logsClient = new CloudWatchLogsClient({ region: AWS_REGION });
+const dynamoClient = new DynamoDBClient({ region: AWS_REGION });
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
