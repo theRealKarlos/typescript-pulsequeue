@@ -187,9 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-and-lint, terraform-validate, security-scan]
     if: github.ref_name == 'master'
-    # Note: To enable manual approval, create a 'production' environment in GitHub
-    # repository settings and uncomment the line below:
-    # environment: production
+    environment: production
 
     steps:
       - name: Checkout code

@@ -275,6 +275,17 @@ git push origin master
 - `release*` branches → **Auto-deploy to staging**
 - `master` branch → **Manual approval for production**
 
+#### **Production Deployment Approval**:
+
+Production deployments require manual approval for safety:
+
+1. **Push to master** triggers the workflow
+2. **Quality checks** run automatically (tests, linting, security scans)
+3. **Manual approval** required before deployment
+4. **Review changes** and approve/reject in GitHub Actions
+
+**Setup**: See [GITHUB_ENVIRONMENT_SETUP.md](GITHUB_ENVIRONMENT_SETUP.md) for manual approval configuration.
+
 #### **Manual Deployment (For Testing)**:
 
 ```bash
