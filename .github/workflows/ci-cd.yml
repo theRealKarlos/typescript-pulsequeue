@@ -35,13 +35,13 @@ jobs:
         run: npm ci
       # Build all Lambda ZIPs for staging environment
       - name: Build all Lambda packages (staging)
-        run: npx ts-node scripts/build-all-lambdas.ts --env=staging
+        run: npx ts-node scripts/build-lambda.ts --env=staging
         env:
           ENVIRONMENT: staging
 
       # Build all Lambda ZIPs for production environment
       - name: Build all Lambda packages (prod)
-        run: npx ts-node scripts/build-all-lambdas.ts --env=prod
+        run: npx ts-node scripts/build-lambda.ts --env=prod
         env:
           ENVIRONMENT: prod
 
