@@ -20,9 +20,6 @@
  *   (or --env=dev, --env=prod)
  *
  * The script will exit with a non-zero code if any Lambda build fails.
- *
- * @author TypeScript-PulseQueue Team
- * @version 1.0.0
  */
 
 import { spawnSync } from 'child_process';

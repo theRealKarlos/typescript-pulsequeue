@@ -24,15 +24,7 @@ module "infrastructure" {
   lambda_timeout      = var.lambda_timeout
   lambda_memory_size  = var.lambda_memory_size
   enable_xray_tracing = var.enable_xray_tracing
-
-  # ============================================================================
-  # LAMBDA ZIP PATHS
-  # ============================================================================
-  lambda_zip_paths = {
-    order_service   = abspath("${path.module}/../../../dist/order-service.zip")
-    payment_service = abspath("${path.module}/../../../dist/payment-service.zip")
-    metrics_service = abspath("${path.module}/../../../dist/metrics-service.zip")
-  }
+  # lambda_zip_paths is now handled in the root module
 
   # ============================================================================
   # SECURITY CONFIGURATION

@@ -93,24 +93,6 @@ variable "grafana_admin_password" {
   }
 }
 
-variable "lambda_zip_paths" {
-  description = "Paths to Lambda deployment packages"
-  type = object({
-    order_service   = string
-    payment_service = string
-    metrics_service = string
-  })
-
-  validation {
-    condition = alltrue([
-      can(fileexists(var.lambda_zip_paths.order_service)),
-      can(fileexists(var.lambda_zip_paths.payment_service)),
-      can(fileexists(var.lambda_zip_paths.metrics_service))
-    ])
-    error_message = "All Lambda zip paths must point to valid files."
-  }
-}
-
 variable "prometheus_config" {
   description = "Prometheus configuration as YAML string"
   type        = string

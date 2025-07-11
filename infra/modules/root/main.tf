@@ -75,7 +75,7 @@ module "payment_eventbridge_bus" {
 
 module "order_service" {
   source              = "../lambda/lambda-function"
-  lambda_zip_path     = var.lambda_zip_paths.order_service
+  lambda_zip_path     = local.lambda_zip_paths.order_service
   function_basename   = "order-service-handler"
   environment         = var.environment
   runtime             = var.lambda_runtime
@@ -93,7 +93,7 @@ module "order_service" {
 
 module "payment_service" {
   source              = "../lambda/lambda-function"
-  lambda_zip_path     = var.lambda_zip_paths.payment_service
+  lambda_zip_path     = local.lambda_zip_paths.payment_service
   function_basename   = "payment-service-handler"
   environment         = var.environment
   runtime             = var.lambda_runtime
@@ -110,7 +110,7 @@ module "payment_service" {
 
 module "metrics_service" {
   source              = "../lambda/lambda-function"
-  lambda_zip_path     = var.lambda_zip_paths.metrics_service
+  lambda_zip_path     = local.lambda_zip_paths.metrics_service
   function_basename   = "metrics-service-handler"
   environment         = var.environment
   runtime             = var.lambda_runtime
@@ -230,6 +230,14 @@ module "cloudwatch_dashboard" {
 # ============================================================================
 
 locals {
+  lambda_zip_base = abspath("${path.module}/../../../dist/${var.environment}")
+
+  lambda_zip_paths = {
+    order_service   = "${local.lambda_zip_base}/order-service.zip"
+    payment_service = "${local.lambda_zip_base}/payment-service.zip"
+    metrics_service = "${local.lambda_zip_base}/metrics-service.zip"
+  }
+
   tags = {
     Environment = var.environment
     Project     = "PulseQueue"
@@ -242,3 +250,4 @@ locals {
     "$${region}", var.region
   )
 }
+
