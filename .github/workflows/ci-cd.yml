@@ -45,6 +45,9 @@ jobs:
         env:
           ENVIRONMENT: prod
 
+      - name: List all Lambda ZIPs with absolute paths
+        run: find ${{ github.workspace }}/dist -type f -name "*.zip" | xargs ls -lh
+
   test-and-lint:
     name: Test and Lint
     runs-on: ubuntu-latest
