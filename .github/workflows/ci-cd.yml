@@ -3,6 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
+      - 'development'
       - 'release*'
       - 'master'
   pull_request:
@@ -32,10 +33,17 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Build Lambda packages
-        run: npm run build:lambda:staging
+      # Build all Lambda ZIPs for staging environment
+      - name: Build all Lambda packages (staging)
+        run: npx ts-node scripts/build-all-lambdas.ts --env=staging
         env:
           ENVIRONMENT: staging
+
+      # Build all Lambda ZIPs for production environment
+      - name: Build all Lambda packages (prod)
+        run: npx ts-node scripts/build-all-lambdas.ts --env=prod
+        env:
+          ENVIRONMENT: prod
 
   test-and-lint:
     name: Test and Lint
@@ -273,16 +281,27 @@ jobs:
         env:
           TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
+      # --- Manual approval step for production deployment (commented out for now) ---
+      # - name: Wait for manual approval
+      #   uses: trstringer/manual-approval@v1
+      #   with:
+      #     secret: ${{ secrets.GITHUB_TOKEN }}
+      #     approvers: user1,user2  # Replace with actual GitHub usernames
+      #     instructions: 'Please review the staging environment before approving production deployment.'
+      #
+      # --- Production deployment steps (still commented out) ---
       # - name: Terraform Apply
       #   working-directory: infra/envs/prod
       #   run: terraform apply -auto-approve tfplan
       #   env:
       #     TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-
+      #
       # - name: Run post-deploy tests
       #   run: npm run postdeploy:prod
       #   env:
       #     AWS_REGION: ${{ env.AWS_REGION }}
+      #
+      # To enable production deployment with manual approval, uncomment the above steps and configure approvers.
 
   # ============================================================================
   # NOTIFICATIONS
