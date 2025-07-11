@@ -165,6 +165,8 @@ jobs:
 
       - name: Build Lambda packages
         run: npm run build:lambda:staging
+        env:
+          ENVIRONMENT: staging
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -188,16 +190,19 @@ jobs:
         env:
           TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
-      - name: Terraform Apply
-        working-directory: infra/envs/staging
-        run: terraform apply -auto-approve tfplan
-        env:
-          TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+      # The following steps are commented out to prevent staging deployment when pushing to master branch
+      # - name: Terraform Apply
+      #   if: github.ref_name == 'master'
+      #   working-directory: infra/envs/staging
+      #   run: terraform apply -auto-approve tfplan
+      #   env:
+      #     TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
-      - name: Run post-deploy tests
-        run: npm run postdeploy:staging
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
+      # - name: Run post-deploy tests
+      #   if: github.ref_name == 'master'
+      #   run: npm run postdeploy:staging
+      #   env:
+      #     AWS_REGION: ${{ env.AWS_REGION }}
 
   # ============================================================================
   # PRODUCTION DEPLOYMENT (MAIN BRANCH WITH MANUAL APPROVAL)
@@ -225,6 +230,8 @@ jobs:
 
       - name: Build Lambda packages
         run: npm run build:lambda:prod
+        env:
+          ENVIRONMENT: prod
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -248,16 +255,16 @@ jobs:
         env:
           TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
-      - name: Terraform Apply
-        working-directory: infra/envs/prod
-        run: terraform apply -auto-approve tfplan
-        env:
-          TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+      # - name: Terraform Apply
+      #   working-directory: infra/envs/prod
+      #   run: terraform apply -auto-approve tfplan
+      #   env:
+      #     TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
-      - name: Run post-deploy tests
-        run: npm run postdeploy:prod
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
+      # - name: Run post-deploy tests
+      #   run: npm run postdeploy:prod
+      #   env:
+      #     AWS_REGION: ${{ env.AWS_REGION }}
 
   # ============================================================================
   # NOTIFICATIONS

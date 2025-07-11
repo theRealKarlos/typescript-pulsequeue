@@ -6,12 +6,12 @@
     "node": "^22.0.0"
   },
   "scripts": {
-    "build:lambda:dev": "ts-node scripts/build-lambda.ts",
-    "build:lambda:staging": "ts-node scripts/build-lambda.ts",
-    "build:lambda:prod": "ts-node scripts/build-lambda.ts",
-    "build:metrics:dev": "ts-node scripts/build-lambda.ts --entry services/metrics-service/handler.ts --outdir dist/metrics-service --zip dist/metrics-service.zip",
-    "build:metrics:staging": "ts-node scripts/build-lambda.ts --entry services/metrics-service/handler.ts --outdir dist/metrics-service --zip dist/metrics-service.zip",
-    "build:metrics:prod": "ts-node scripts/build-lambda.ts --entry services/metrics-service/handler.ts --outdir dist/metrics-service --zip dist/metrics-service.zip",
+    "build:lambda:dev": "cross-env ENVIRONMENT=dev ts-node scripts/build-lambda.ts",
+    "build:lambda:staging": "cross-env ENVIRONMENT=staging ts-node scripts/build-lambda.ts",
+    "build:lambda:prod": "cross-env ENVIRONMENT=prod ts-node scripts/build-lambda.ts",
+    "build:metrics:dev": "cross-env ENVIRONMENT=dev ts-node scripts/build-lambda.ts --entry services/metrics-service/handler.ts --outdir dist/metrics-service --zip dist/metrics-service.zip",
+    "build:metrics:staging": "cross-env ENVIRONMENT=staging ts-node scripts/build-lambda.ts --entry services/metrics-service/handler.ts --outdir dist/metrics-service --zip dist/metrics-service.zip",
+    "build:metrics:prod": "cross-env ENVIRONMENT=prod ts-node scripts/build-lambda.ts --entry services/metrics-service/handler.ts --outdir dist/metrics-service --zip dist/metrics-service.zip",
     "test:eventbridge": "ts-node scripts/test-eventbridge-cli.ts",
     "lint": "ts-node scripts/lint-test.ts",
     "lint:fix": "eslint services/**/*.ts scripts/**/*.ts --fix",
