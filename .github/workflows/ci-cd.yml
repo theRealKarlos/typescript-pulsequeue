@@ -102,7 +102,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: infra/envs/${{ steps.env.outputs.environment }}
-        run: terraform init -backend=false
+        run: terraform init
 
       - name: Terraform Validate
         working-directory: infra/envs/${{ steps.env.outputs.environment }}
