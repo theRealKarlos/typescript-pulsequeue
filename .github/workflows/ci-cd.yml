@@ -135,17 +135,21 @@ jobs:
             echo "environment=dev" >> $GITHUB_OUTPUT
           fi
 
-      - name: Terraform Init
-        working-directory: infra/envs/${{ steps.env.outputs.environment }}
-        run: terraform init
+      - name: Terraform Validate (staging)
+        working-directory: infra/envs/staging
+        run: |
+          terraform init
+          terraform validate
+          terraform plan -var-file=terraform.tfvars -out=tfplan
+        env:
+          TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
-      - name: Terraform Validate
-        working-directory: infra/envs/${{ steps.env.outputs.environment }}
-        run: terraform validate
-
-      - name: Terraform Plan (Dry Run)
-        working-directory: infra/envs/${{ steps.env.outputs.environment }}
-        run: terraform plan -var-file=terraform.tfvars -out=tfplan
+      - name: Terraform Validate (prod)
+        working-directory: infra/envs/prod
+        run: |
+          terraform init
+          terraform validate
+          terraform plan -var-file=terraform.tfvars -out=tfplan
         env:
           TF_VAR_grafana_admin_password: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
