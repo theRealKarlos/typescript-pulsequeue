@@ -96,8 +96,8 @@ resource "aws_iam_role_policy" "github_actions" {
           "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:s3:::lambda-deployment-bucket",
-          "arn:aws:s3:::lambda-deployment-bucket/*"
+          "arn:aws:s3:::pulsequeue-terraform-backend-state",
+          "arn:aws:s3:::pulsequeue-terraform-backend-state/*"
         ]
       },
       {
