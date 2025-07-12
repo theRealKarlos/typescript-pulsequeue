@@ -24,14 +24,11 @@ The CI/CD pipeline follows this strategy:
 
 Set up these secrets in your GitHub repository:
 
-### **AWS Credentials**
-
-- `AWS_ACCESS_KEY_ID`: Your AWS access key
-- `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
-
 ### **Application Secrets**
 
 - `GRAFANA_ADMIN_PASSWORD`: Secure password for Grafana admin user
+
+> **Note:** AWS authentication is handled via OIDC (OpenID Connect) and does not require AWS access keys. Do not add `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` as secrets.
 
 ### **Setting Up Secrets**
 

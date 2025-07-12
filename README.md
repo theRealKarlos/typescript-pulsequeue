@@ -623,12 +623,6 @@ interface OrderEvent {
 
 ## License
 
-This project is licensed under the ISC License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
----
-
-**Note**: This project is designed as a learning tool and demonstration of best practices. For production use, additional security, monitoring, and operational considerations should be implemented.
-
-# Test manual approval workflow
-
-# Test manual approval with AWS credentials
+_Disclaimer: This project is for demonstration and educational purposes only. No warranty is provided._
