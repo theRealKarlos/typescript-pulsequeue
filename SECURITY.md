@@ -17,7 +17,8 @@ This document outlines the security measures and best practices implemented in t
 - **Encryption at Rest**: DynamoDB tables use AWS managed KMS keys for encryption
 - **Point-in-Time Recovery**: Enabled for DynamoDB tables to protect against data loss
 - **TLS Encryption**: All API Gateway endpoints use HTTPS
-- **VPC Security**: Resources deployed in private subnets where applicable
+- **VPC Security**: Resources are deployed in public subnets for this lab environment to avoid the cost of NAT gateways required for private subnets. In production, private subnets are recommended for sensitive workloads.
+- **Subnet Choice**: All resources, including monitoring, are deployed in public subnets to minimise cost. This is a deliberate trade-off for lab/demo purposes and should not be used in production environments.
 
 ### Network Security
 
