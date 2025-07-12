@@ -32,8 +32,9 @@ This folder contains all foundational infrastructure required before deploying a
 ## Important
 
 - **Run this step before deploying any environment (dev, staging, prod, etc.)**
-- **No AWS access keys are required in GitHub secrets** (uses OIDC)
+- **No AWS access keys required** (OIDC authentication is the default)
 - **If you change the GitHub repository name in variables.tf, you must re-run the script to update the IAM role trust policy in AWS.**
+- State locking uses S3 lockfile (Terraform 1.6+)
 
 ## More Information
 

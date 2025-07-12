@@ -573,19 +573,17 @@ interface OrderEvent {
 
 ---
 
-## Planned DevOps Improvements
-
-- **CI/CD Automation:** A GitHub Actions workflow will be added to fully automate deployments for staging and production environments, replacing the current `deploy.ts` script for those environments. This will ensure robust, auditable, and team-friendly deployments.
-- **Multi-Environment Support:** Additional environment directories and backend files for `staging` and `prod` will be created, following the same strict environment isolation and state management as `dev`.
-- **Strict Environment Propagation:** All scripts, Lambdas, and infrastructure will continue to require explicit environment specification—no fallbacks—ensuring safe, environment-agnostic deployments.
-- **Advanced Security:** Plans include AWS WAF integration, VPC endpoints, and enhanced IAM policies for production.
-- **Performance Optimization:** Lambda provisioned concurrency, DynamoDB auto-scaling, and CDN integration are on the roadmap.
-- **Enhanced Monitoring:** Custom CloudWatch dashboards, advanced alerting, and cost optimization monitoring will be expanded.
-- **Developer Experience:** Improvements such as local development environment, hot reloading, and enhanced debugging tools are planned.
-
----
-
 ## Future Improvements
+
+### Completed Enhancements
+
+- Multi-environment support (dev, staging, prod)
+- OIDC authentication for GitHub Actions (no AWS keys in secrets)
+- Custom CloudWatch dashboards
+- Local development environment and scripts
+- Environment-specific monitoring
+- Production environment with enhanced security
+- Environment isolation for state and resources
 
 ### Planned Enhancements
 

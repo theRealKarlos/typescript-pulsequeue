@@ -30,3 +30,6 @@ This directory contains the Terraform configuration for the development environm
 - **Use `secrets.auto.tfvars.example`** as a template
 - **State is stored in S3** - No local state files
 - **Lock files are generated locally** - Don't commit `.terraform.lock.hcl`
+- **Initialize** infrastructure
+- **No AWS access keys required** (OIDC authentication is the default)
+- State locking uses S3 lockfile (Terraform 1.6+)
