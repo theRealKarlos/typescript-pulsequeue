@@ -11,6 +11,12 @@ on:
       - 'master'
       - 'development'
 
+# Add permissions for CodeQL action to access workflow run information
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 env:
   NODE_VERSION: '22'
   AWS_REGION: 'eu-west-2'
