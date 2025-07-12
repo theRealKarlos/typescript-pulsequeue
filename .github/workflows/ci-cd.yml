@@ -237,6 +237,12 @@ jobs:
           role-to-assume: arn:aws:iam::379673441375:role/github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Download Lambda ZIPs
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-zips
+          path: dist/
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
