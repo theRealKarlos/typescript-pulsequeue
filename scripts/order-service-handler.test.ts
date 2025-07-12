@@ -1,19 +1,27 @@
 // Jest unit tests for the order-service Lambda handler.
 // - Mocks DynamoDBClient using aws-sdk-client-mock
+// - Mocks EventBridgeClient using aws-sdk-client-mock
 // - Validates correct processing of order events and error handling
 // - Ensures no real AWS calls are made during tests
 
 import { mockClient } from 'aws-sdk-client-mock';
 import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { handler } from '../services/order-service/handler';
 import fs from 'fs';
 import path from 'path';
 
 const ddbMock = mockClient(DynamoDBClient);
+const eventBridgeMock = mockClient(EventBridgeClient);
 
 beforeEach(() => {
   ddbMock.reset();
   ddbMock.on(UpdateItemCommand).resolves({ Attributes: {} });
+  
+  eventBridgeMock.reset();
+  eventBridgeMock.on(PutEventsCommand).resolves({ 
+    Entries: [{ EventId: 'mock-event-id' }] 
+  });
 });
 
 describe('order-service handler', () => {
