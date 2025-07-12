@@ -2,6 +2,35 @@
 
 This directory contains the infrastructure-as-code configuration for the PulseQueue application, following **DRY (Don't Repeat Yourself)** principles with a shared root module approach.
 
+## 🚀 Bootstrap Infrastructure (S3 State Bucket + OIDC Provider)
+
+Before deploying any environment, you must provision the foundational infrastructure:
+
+- **S3 bucket** for Terraform state storage
+- **OIDC provider and IAM role** for secure GitHub Actions authentication (no AWS access keys required)
+
+**Deploy with:**
+
+- On Windows:
+  ```powershell
+  .\scripts\bootstrap-infra.ps1
+  ```
+  or
+  ```powershell
+  & .\scripts\bootstrap-infra.ps1
+  ```
+- On Linux/Mac:
+  ```bash
+  chmod +x scripts/bootstrap-infra.sh
+  ./scripts/bootstrap-infra.sh
+  ```
+
+See [../../OIDC_SETUP.md](../OIDC_SETUP.md) for full details and migration steps.
+
+**All environments depend on this bootstrap step being run first.**
+
+---
+
 ## 🏗️ Architecture Overview
 
 ### **Shared Root Module Pattern**

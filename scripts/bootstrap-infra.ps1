@@ -47,10 +47,9 @@ Write-Host "   IAM Role ARN: $ROLE_ARN" -ForegroundColor White
 Write-Host "   IAM Role Name: $ROLE_NAME" -ForegroundColor White
 Write-Host ""
 Write-Host "🔧 Next Steps:" -ForegroundColor Cyan
-Write-Host "   1. Update your GitHub repository name in infra/bootstrap/variables.tf" -ForegroundColor White
+Write-Host "   1. If you need to change your GitHub repository name, update infra/bootstrap/variables.tf and re-run this script to update the IAM role trust policy." -ForegroundColor White
 Write-Host "   2. Remove AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from GitHub secrets" -ForegroundColor White
 Write-Host "   3. Test the workflow to ensure OIDC authentication works" -ForegroundColor White
 Write-Host ""
-Write-Host "⚠️  Important: Make sure to update the GitHub repository name in variables.tf" -ForegroundColor Yellow
-Write-Host "   Current value: typescript-pulsequeue/typescript-pulsequeue" -ForegroundColor White
-Write-Host "   Update to your actual repository: your-org/your-repo" -ForegroundColor White 
+Write-Host "⚠️  Important: The GitHub repository name in variables.tf must match your actual repository (e.g., your-org/your-repo)." -ForegroundColor Yellow
+Write-Host "   If you change it, re-run this script to update the IAM role trust relationship in AWS." -ForegroundColor White 

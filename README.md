@@ -8,6 +8,33 @@ A modern, type-safe, event-driven serverless e-commerce application built with T
 
 ---
 
+## Bootstrap Infrastructure (S3 State Bucket + OIDC Provider)
+
+Before deploying any application infrastructure, you must provision the foundational resources:
+
+- **S3 bucket** for Terraform state storage
+- **OIDC provider and IAM role** for secure GitHub Actions authentication (no AWS access keys required)
+
+**Deploy with:**
+
+- On Windows:
+  ```powershell
+  .\scripts\bootstrap-infra.ps1
+  ```
+  or
+  ```powershell
+  & .\scripts\bootstrap-infra.ps1
+  ```
+- On Linux/Mac:
+  ```bash
+  chmod +x scripts/bootstrap-infra.sh
+  ./scripts/bootstrap-infra.sh
+  ```
+
+See [OIDC_SETUP.md](./OIDC_SETUP.md) for full details and migration steps.
+
+---
+
 ## Environment-Agnostic Deployment
 
 - **Strict Environment Variable Requirement:** All scripts and Lambda code require the `ENVIRONMENT` environment variable to be set. If not set, deployment and tests will fail fast.
@@ -21,6 +48,7 @@ A modern, type-safe, event-driven serverless e-commerce application built with T
 ## Table of Contents
 
 - [Overview](#overview)
+- [Bootstrap Infrastructure](#bootstrap-infrastructure-s3-state-bucket--oidc-provider)
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
 - [Security Features](#security-features)
@@ -54,6 +82,7 @@ TypeScript PulseQueue is a concept/prototype app that demonstrates event-driven 
 - **Payment Processing**: Simulated payment flows with success/failure scenarios
 - **Security First**: IAM least privilege, encryption at rest, comprehensive security practices
 - **CI/CD Pipeline**: Automated testing, security scanning, and deployment
+- **OIDC Authentication**: GitHub Actions uses OIDC for AWS authentication (no long-lived access keys)
 
 ---
 
@@ -108,6 +137,7 @@ OrderPlaced (EventBridge) → Order Lambda → PaymentRequested (EventBridge) �
 ### 🔐 Infrastructure Security
 
 - **IAM Least Privilege**: All Lambda functions have minimal required permissions
+- **OIDC Authentication**: GitHub Actions uses short-lived tokens for AWS access (no long-lived access keys in secrets)
 - **Encryption at Rest**: DynamoDB tables use AWS managed KMS keys
 - **Point-in-Time Recovery**: Enabled for data protection
 - **VPC Security**: Resources deployed in private subnets where applicable
@@ -127,7 +157,7 @@ OrderPlaced (EventBridge) → Order Lambda → PaymentRequested (EventBridge) �
 - **Audit Trail**: Complete event flow tracking
 - **Error Tracking**: Comprehensive error logging and alerting
 
-For detailed security information, see [SECURITY.md](./SECURITY.md).
+For detailed security information, see [SECURITY.md](./SECURITY.md) and [OIDC_SETUP.md](./OIDC_SETUP.md).
 
 ---
 
@@ -138,7 +168,8 @@ For detailed security information, see [SECURITY.md](./SECURITY.md).
 - Node.js 22.x
 - AWS CLI configured
 - Terraform installed
-- AWS credentials with appropriate permissions
+- **Bootstrap infrastructure deployed** (see above)
+- **No AWS access keys required in GitHub secrets** (uses OIDC)
 
 ### Installation
 
@@ -150,7 +181,7 @@ cd TypeScript-PulseQueue
 # Install dependencies
 npm install
 
-# Set up AWS credentials
+# Set up AWS CLI (for local Terraform usage)
 aws configure
 ```
 
@@ -599,5 +630,7 @@ This project is licensed under the ISC License. See the LICENSE file for details
 ---
 
 **Note**: This project is designed as a learning tool and demonstration of best practices. For production use, additional security, monitoring, and operational considerations should be implemented.
+
 # Test manual approval workflow
+
 # Test manual approval with AWS credentials

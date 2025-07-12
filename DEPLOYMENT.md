@@ -98,12 +98,29 @@ npm run lint:all
 
 ### 1. Bootstrap (First Time Only)
 
-```bash
-# Initialize Terraform state backend
-cd infra/bootstrap
-terraform init
-terraform apply
-```
+**Deploy foundational infrastructure (S3 state bucket + OIDC provider):**
+
+- On Windows:
+  ```powershell
+  .\scripts\bootstrap-infra.ps1
+  ```
+  or
+  ```powershell
+  & .\scripts\bootstrap-infra.ps1
+  ```
+- On Linux/Mac:
+  ```bash
+  chmod +x scripts/bootstrap-infra.sh
+  ./scripts/bootstrap-infra.sh
+  ```
+
+**This creates:**
+
+- S3 bucket for Terraform state storage
+- OIDC provider for GitHub Actions authentication
+- IAM role for GitHub Actions with least-privilege permissions
+
+**No AWS access keys required in GitHub secrets** (uses OIDC authentication).
 
 ### 2. Environment Deployment
 

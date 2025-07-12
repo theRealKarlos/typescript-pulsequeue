@@ -33,19 +33,25 @@ variable "github_repository" {
 }
 ```
 
-### Step 2: Deploy OIDC Infrastructure
+### Step 2: Deploy Bootstrap Infrastructure
 
 **On Windows:**
 
 ```powershell
-.\scripts\deploy-oidc.ps1
+.\scripts\bootstrap-infra.ps1
+```
+
+or
+
+```powershell
+& .\scripts\bootstrap-infra.ps1
 ```
 
 **On Linux/Mac:**
 
 ```bash
-chmod +x scripts/deploy-oidc.sh
-./scripts/deploy-oidc.sh
+chmod +x scripts/bootstrap-infra.sh
+./scripts/bootstrap-infra.sh
 ```
 
 ### Step 3: Update GitHub Secrets
@@ -178,7 +184,7 @@ aws iam get-role-policy --role-name github-actions-role --policy-name github-act
 ## 🔄 Migration Checklist
 
 - [ ] Update repository name in `variables.tf`
-- [ ] Deploy OIDC infrastructure
+- [ ] Deploy bootstrap infrastructure
 - [ ] Update GitHub Actions workflow (already done)
 - [ ] Remove AWS access keys from GitHub secrets
 - [ ] Test workflow with a small change
