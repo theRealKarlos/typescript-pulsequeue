@@ -340,6 +340,9 @@ For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 - **Post-Deployment Testing**: Integration tests after deployment
 - **Security Notifications**: Alert on security issues
 
+> **Note on Linting:**
+> The Lambda build script (`scripts/build-lambda.ts`) automatically runs ESLint on each Lambda handler before building and packaging. However, for completeness and to ensure code quality across the entire repository—including shared libraries, utility scripts, and infrastructure code—the CI/CD pipeline also runs a dedicated linting step (`npm run lint:all`). This guarantees that all TypeScript code, not just Lambda handlers, is checked for style and correctness.
+
 ### **Pipeline Stages**
 
 1. **Code Quality & Testing**
