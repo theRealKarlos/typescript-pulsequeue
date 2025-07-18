@@ -13,7 +13,6 @@ on:
 
 # Add permissions for CodeQL action to access workflow run information
 permissions:
-  actions: read
   contents: read
   security-events: write
   id-token: write # Required for OIDC authentication with AWS
